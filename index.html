@@ -345,41 +345,40 @@ function resetForm() {
 }
 
 function buildWhatsAppText(p, scooters, rnus) {
-  const urgLabel = { haute:'[HAUTE]', moyenne:'[MOYENNE]', basse:'[BASSE]' };
+  const urgEmoji = { haute:'🔴', moyenne:'🟠', basse:'🟢' };
   const date = new Date(p.Date);
   const dateStr = isNaN(date) ? p.Date : date.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  // Creneau : ignore if it looks like an ISO date
   const creneau = p['Créneau'] && !p['Créneau'].includes('T22:00') && !p['Créneau'].includes('T00:00') ? p['Créneau'] : '';
-  let t = `PASS'SHIFT eDOG — Bordeaux\n`;
+  let t = `🛵 PASS'SHIFT eDOG — Bordeaux\n`;
   t += `━━━━━━━━━━━━━━━━━━\n`;
-  t += `${dateStr}${creneau ? ' · ' + creneau : ''}\n`;
-  t += `Par : ${p['Créé par']||'—'}  |  Astreinte : ${p.Astreinte||'—'}\n`;
+  t += `📅 ${dateStr}${creneau ? ' · ' + creneau : ''}\n`;
+  t += `👤 Par : ${p['Créé par']||'—'}  |  🚨 Astreinte : ${p.Astreinte||'—'}\n`;
   t += `━━━━━━━━━━━━━━━━━━\n`;
   if (scooters.length > 0) {
-    t += `SCOOTERS OFFLINE (${scooters.length})\n`;
+    t += `🛵 SCOOTERS OFFLINE (${scooters.length})\n`;
     scooters.forEach(s => {
-      t += `${urgLabel[s.Urgence]||'[?]'} ${s.Nom||'—'}\n`;
-      if (s.Loc2hire) t += `  > 2hire : ${s.Loc2hire}\n`;
-      if (s.LocUser) t += `  > Utilisateur : ${s.LocUser}\n`;
-      const infos = [s.Batterie ? `Batterie ${s.Batterie}%` : '', s.Depuis ? `Offline depuis ${s.Depuis}` : ''].filter(Boolean).join(' · ');
+      t += `${urgEmoji[s.Urgence]||'⚪'} ${s.Nom||'—'}\n`;
+      if (s.Loc2hire) t += `  > 📍 2hire : ${s.Loc2hire}\n`;
+      if (s.LocUser) t += `  > 📞 Utilisateur : ${s.LocUser}\n`;
+      const infos = [s.Batterie ? `🔋 ${s.Batterie}%` : '', s.Depuis ? `⏱ Depuis ${s.Depuis}` : ''].filter(Boolean).join('  ');
       if (infos) t += `  > ${infos}\n`;
-      if (s.Action) t += `  > Action : ${s.Action}\n`;
+      if (s.Action) t += `  > ➡️ ${s.Action}\n`;
     });
   } else {
-    t += `Aucun scooter offline\n`;
+    t += `✅ Aucun scooter offline\n`;
   }
   if (rnus.length > 0) {
     t += `━━━━━━━━━━━━━━━━━━\n`;
-    t += `RNU : ${rnus.map(r => r.Nom||'—').join(' · ')}\n`;
+    t += `🔧 RNU : ${rnus.map(r => r.Nom||'—').join(' · ')}\n`;
   }
   t += `━━━━━━━━━━━━━━━━━━\n`;
-  t += `STATUTS\n`;
-  t += `VP : ${p.VP==='oui'?'A jour':'Non a jour'}${p['VP Comment']?' — '+p['VP Comment']:''}\n`;
-  t += `Reports : ${p.Reports==='oui'?'A jour':'Non a jour'}${p['Reports Comment']?' — '+p['Reports Comment']:''}\n`;
-  t += `Trips longs : ${p.TripsOk==='Oui'?'OK':'A verifier'}${p['Trips Detail']?' — '+p['Trips Detail']:''}\n`;
+  t += `📊 STATUTS\n`;
+  t += `${p.VP==='oui'?'✅':'❌'} VP${p['VP Comment']?' — '+p['VP Comment']:''}\n`;
+  t += `${p.Reports==='oui'?'✅':'❌'} Reports${p['Reports Comment']?' — '+p['Reports Comment']:''}\n`;
+  t += `${p.TripsOk==='Oui'?'✅':'⚠️'} Trips longs${p['Trips Detail']?' — '+p['Trips Detail']:''}\n`;
   if (p.Message) {
     t += `━━━━━━━━━━━━━━━━━━\n`;
-    t += `${p.Message}\n`;
+    t += `💬 ${p.Message}\n`;
   }
   return t;
 }
