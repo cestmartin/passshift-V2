@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pass'Shift · eDOG</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --c-primary: #1D9E75;
+      --c-primary-light: #E1F5EE;
+      --c-primary-dark: #0F6E56;
+      --c-urgent: #E24B4A;
+      --c-urgent-light: #FCEBEB;
+      --c-warn: #EF9F27;
+      --c-warn-light: #FAEEDA;
+      --c-bg: #F5F5F3;
+      --c-surface: #FFFFFF;
+      --c-border: rgba(0,0,0,0.12);
+      --c-text: #1a1a1a;
+      --c-text-muted: #666660;
+      --c-secondary-bg: #F1EFE8;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --c-bg: #1a1a18;
+        --c-surface: #242422;
+        --c-border: rgba(255,255,255,0.12);
+        --c-text: #f0f0ee;
+        --c-text-muted: #999990;
+        --c-secondary-bg: #2c2c2a;
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--c-bg); color: var(--c-text); min-height: 100vh; }
+    .app { max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 0.5px solid var(--c-border); }
+    .logo { width: 38px; height: 38px; background: var(--c-primary); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .logo svg { width: 22px; height: 22px; }
+    .app-title { font-size: 18px; font-weight: 600; color: var(--c-text); }
+    .app-sub { font-size: 13px; color: var(--c-text-muted); }
+    .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; background: var(--c-secondary-bg); padding: 4px; border-radius: var(--radius-md); }
+    .tab { flex: 1; padding: 9px; font-size: 13px; font-weight: 500; border: none; background: transparent; cursor: pointer; border-radius: 6px; color: var(--c-text-muted); transition: all 0.15s; font-family: inherit; }
+    .tab.active { background: var(--c-surface); color: var(--c-text); border: 0.5px solid var(--c-border); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .view { display: none; }
+    .view.active { display: block; }
+    .section { background: var(--c-surface); border: 0.5px solid var(--c-border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .section-title { font-size: 11px; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 1rem; }
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 13px; color: var(--c-text-muted); margin-bottom: 4px; }
+    .field input[type=text],
+    .field input[type=number],
+    .field select,
+    .field textarea {
+      width: 100%; padding: 9px 11px; font-size: 14px;
+      border: 0.5px solid var(--c-border); border-radius: var(--radius-md);
+      background: var(--c-surface); color: var(--c-text); font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: var(--c-primary);
+    }
+    .field textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    @media (max-width: 500px) {
+      .row2, .row3 { grid-template-columns: 1fr; }
+    }
+    .urgence-btns { display: flex; gap: 6px; }
+    .urgence-btn {
+      flex: 1; padding: 8px 4px; font-size: 12px; font-weight: 500;
+      border: 0.5px solid var(--c-border); border-radius: var(--radius-md);
+      background: var(--c-secondary-bg); cursor: pointer; color: var(--c-text-muted);
+      text-align: center; transition: all 0.15s; font-family: inherit;
+    }
+    .urgence-btn.sel-haute { background: var(--c-urgent-light); border-color: var(--c-urgent); color: var(--c-urgent); }
+    .urgence-btn.sel-moyenne { background: var(--c-warn-light); border-color: var(--c-warn); color: #854F0B; }
+    .urgence-btn.sel-basse { background: var(--c-primary-light); border-color: var(--c-primary); color: var(--c-primary-dark); }
+    .scooter-item, .rnu-item {
+      background: var(--c-secondary-bg); border-radius: var(--radius-md);
+      padding: 12px; padding-top: 34px; margin-bottom: 10px; position: relative;
+    }
+    .remove-btn {
+      position: absolute; top: 8px; right: 10px; background: none; border: none;
+      cursor: pointer; font-size: 20px; color: var(--c-text-muted); line-height: 1; font-family: inherit;
+    }
+    .item-label { position: absolute; top: 10px; left: 12px; font-size: 12px; font-weight: 600; color: var(--c-text-muted); }
+    .scooter-item .field input, .scooter-item .field select,
+    .rnu-item .field input, .rnu-item .field select {
+      background: var(--c-surface);
+    }
+    .add-btn {
+      width: 100%; padding: 11px; border: 0.5px dashed var(--c-border);
+      border-radius: var(--radius-md); background: transparent; cursor: pointer;
+      font-size: 13px; color: var(--c-text-muted); display: flex;
+      align-items: center; justify-content: center; gap: 6px;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .add-btn:hover { background: var(--c-secondary-bg); color: var(--c-text); }
+    .status-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .status-btn {
+      padding: 7px 20px; font-size: 13px; font-weight: 500;
+      border: 0.5px solid var(--c-border); border-radius: 20px;
+      background: var(--c-secondary-bg); cursor: pointer; color: var(--c-text-muted);
+      transition: all 0.15s; font-family: inherit;
+    }
+    .status-btn.sel-oui { background: var(--c-primary-light); border-color: var(--c-primary); color: var(--c-primary-dark); }
+    .status-btn.sel-non { background: var(--c-urgent-light); border-color: var(--c-urgent); color: var(--c-urgent); }
+    .check-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .check-row input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: var(--c-primary); }
+    .check-row label { font-size: 14px; color: var(--c-text); cursor: pointer; }
+    .hidden { display: none !important; }
+    .submit-btn {
+      width: 100%; padding: 14px; background: var(--c-primary); color: white;
+      border: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; font-family: inherit; margin-top: 0.5rem;
+    }
+    .submit-btn:hover { background: var(--c-primary-dark); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .toast {
+      position: fixed; top: 20px; right: 20px; padding: 12px 20px;
+      border-radius: var(--radius-md); font-size: 14px; font-weight: 500;
+      display: none; z-index: 100; font-family: inherit; max-width: 320px;
+    }
+    .toast.success { background: var(--c-primary-light); color: var(--c-primary-dark); border: 0.5px solid var(--c-primary); }
+    .toast.error { background: var(--c-urgent-light); color: var(--c-urgent); border: 0.5px solid var(--c-urgent); }
+    .passation-card {
+      background: var(--c-surface); border: 0.5px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px;
+    }
+    .passation-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 8px; }
+    .passation-name { font-size: 15px; font-weight: 600; color: var(--c-text); margin-bottom: 2px; }
+    .passation-meta { font-size: 13px; color: var(--c-text-muted); }
+    .creneau-badge { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: var(--c-secondary-bg); color: var(--c-text-muted); white-space: nowrap; flex-shrink: 0; }
+    .pills { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+    .pill { display: inline-flex; align-items: center; font-size: 12px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+    .pill-ok { background: var(--c-primary-light); color: var(--c-primary-dark); }
+    .pill-nok { background: var(--c-urgent-light); color: var(--c-urgent); }
+    .pill-info { background: #E6F1FB; color: #0C447C; }
+    .astreinte-line { font-size: 13px; color: var(--c-text-muted); margin-bottom: 8px; }
+    .msg-block { font-size: 13px; color: var(--c-text); padding: 8px 10px; background: var(--c-secondary-bg); border-radius: var(--radius-md); line-height: 1.5; }
+    .filters { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .filters select {
+      padding: 8px 10px; font-size: 13px; border: 0.5px solid var(--c-border);
+      border-radius: var(--radius-md); background: var(--c-surface);
+      color: var(--c-text); font-family: inherit;
+    }
+    .empty { text-align: center; padding: 3rem; color: var(--c-text-muted); font-size: 14px; }
+    .loading { text-align: center; padding: 2rem; color: var(--c-text-muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="3" width="18" height="12" rx="2.5" stroke="white" stroke-width="1.8"/>
+        <path d="M8 19h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M11 15v4" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="app-title">Pass'Shift</div>
+      <div class="app-sub">Passation intelligente · eDOG</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('form', this)">Nouvelle passation</button>
+    <button class="tab" onclick="switchTab('history', this)">Historique</button>
+  </div>
+
+  <!-- FORMULAIRE -->
+  <div id="view-form" class="view active">
+
+    <div class="section">
+      <div class="section-title">Infos du shift</div>
+      <div class="row3">
+        <div class="field">
+          <label>Créneau du shift</label>
+          <input type="text" id="creneau" placeholder="Ex : 6h-14h">
+        </div>
+        <div class="field">
+          <label>Ville</label>
+          <select id="ville">
+            <option value="Bordeaux">Bordeaux</option>
+            <option value="Lyon">Lyon</option>
+            <option value="Paris">Paris</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Votre prénom</label>
+          <input type="text" id="creePar" placeholder="Ex : Clément">
+        </div>
+      </div>
+      <div class="field">
+        <label>Personne d'astreinte</label>
+        <input type="text" id="astreinte" placeholder="Nom de la personne joignable en cas d'urgence">
+      </div>
+    </div>
+
+    <!-- Scooters offline -->
+    <div class="section">
+      <div class="section-title">Scooters offline</div>
+      <div id="scooters-list"></div>
+      <button class="add-btn" onclick="addScooter()">+ Ajouter un scooter offline</button>
+    </div>
+
+    <!-- RNU -->
+    <div class="section">
+      <div class="section-title">RNU – Réparations / Nettoyage / Urgent</div>
+      <div id="rnu-list"></div>
+      <button class="add-btn" onclick="addRNU()">+ Ajouter un scooter en RNU</button>
+    </div>
+
+    <!-- VP -->
+    <div class="section">
+      <div class="section-title">VP – Vérifications périodiques</div>
+      <div class="field">
+        <label style="margin-bottom:8px;display:block">À jour dans les VP ?</label>
+        <div class="status-row">
+          <button class="status-btn" id="vp-oui" onclick="setStatus('vp','oui')">Oui</button>
+          <button class="status-btn" id="vp-non" onclick="setStatus('vp','non')">Non</button>
+        </div>
+        <input type="hidden" id="vp-val" value="">
+        <input type="text" id="vp-comment" placeholder="Commentaire (optionnel)">
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="section">
+      <div class="section-title">Reports</div>
+      <div class="field">
+        <label style="margin-bottom:8px;display:block">À jour dans les reports ?</label>
+        <div class="status-row">
+          <button class="status-btn" id="rep-oui" onclick="setStatus('rep','oui')">Oui</button>
+          <button class="status-btn" id="rep-non" onclick="setStatus('rep','non')">Non</button>
+        </div>
+        <input type="hidden" id="rep-val" value="">
+        <input type="text" id="rep-comment" placeholder="Commentaire (optionnel)">
+      </div>
+    </div>
+
+    <!-- Trips longs -->
+    <div class="section">
+      <div class="section-title">Trips longs</div>
+      <div class="check-row">
+        <input type="checkbox" id="trips-ok" onchange="toggleTrips()">
+        <label for="trips-ok">Tout est OK, aucun trip long à signaler</label>
+      </div>
+      <div id="trips-detail" class="field">
+        <label>Détail des trips longs</label>
+        <textarea id="trips-text" placeholder="Ex : Trip de 45 min sur scooter BX-123, utilisateur contacté..."></textarea>
+      </div>
+    </div>
+
+    <!-- Message libre -->
+    <div class="section">
+      <div class="section-title">Message pour l'équipe suivante</div>
+      <div class="field">
+        <textarea id="message" placeholder="Infos importantes, contexte, points d'attention..."></textarea>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitPassation()">Envoyer la passation</button>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div id="view-history" class="view">
+    <div class="filters">
+      <select id="filter-ville" onchange="loadHistory()">
+        <option value="">Toutes les villes</option>
+        <option value="Bordeaux">Bordeaux</option>
+        <option value="Lyon">Lyon</option>
+        <option value="Paris">Paris</option>
+      </select>
+    </div>
+    <div id="history-list"><div class="loading">Chargement...</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz28yZmLbQKfJDIRS4ECoyHCZEnfLx58FBIAoRMT877HIhmmxJx4YgoNsycHsCDDR7PWA/exec";
+  let sCount = 0, rCount = 0;
+
+  function switchTab(tab, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('view-' + tab).classList.add('active');
+    if (tab === 'history') loadHistory();
+  }
+
+  function addScooter() {
+    const id = ++sCount;
+    const div = document.createElement('div');
+    div.className = 'scooter-item';
+    div.id = 'sc-' + id;
+    div.innerHTML = `
+      <span class="item-label">Scooter ${id}</span>
+      <button class="remove-btn" onclick="removeEl('sc-${id}')">×</button>
+      <div class="row2" style="margin-bottom:8px">
+        <div class="field"><label>Nom du scoot</label><input type="text" id="sc${id}-nom" placeholder="Ex : BX-123"></div>
+        <div class="field"><label>Localisation 2hire</label><input type="text" id="sc${id}-loc2hire" placeholder="Ex : Rue Victor Hugo"></div>
+      </div>
+      <div class="row2" style="margin-bottom:8px">
+        <div class="field"><label>Localisation utilisateur</label><input type="text" id="sc${id}-locuser" placeholder="Si contacté au tél..."></div>
+        <div class="field"><label>Batterie %</label><input type="number" id="sc${id}-bat" placeholder="15" min="0" max="100"></div>
+      </div>
+      <div class="row2" style="margin-bottom:8px">
+        <div class="field"><label>Offline depuis</label><input type="text" id="sc${id}-depuis" placeholder="Ex : 16h30 (2h30)"></div>
+        <div class="field"><label>Action à mener</label><input type="text" id="sc${id}-action" placeholder="Ex : Vérifier sur place"></div>
+      </div>
+      <div class="field">
+        <label>Urgence</label>
+        <div class="urgence-btns">
+          <button class="urgence-btn" onclick="setUrgence(${id},this,'haute')">Haute</button>
+          <button class="urgence-btn" onclick="setUrgence(${id},this,'moyenne')">Moyenne</button>
+          <button class="urgence-btn" onclick="setUrgence(${id},this,'basse')">Basse</button>
+        </div>
+        <input type="hidden" id="sc${id}-urgence" value="">
+      </div>`;
+    document.getElementById('scooters-list').appendChild(div);
+  }
+
+  function setUrgence(id, btn, level) {
+    btn.closest('.urgence-btns').querySelectorAll('.urgence-btn').forEach(b => b.className = 'urgence-btn');
+    btn.classList.add('sel-' + level);
+    document.getElementById('sc' + id + '-urgence').value = level;
+  }
+
+  function addRNU() {
+    const id = ++rCount;
+    const div = document.createElement('div');
+    div.className = 'rnu-item';
+    div.id = 'rn-' + id;
+    div.innerHTML = `
+      <span class="item-label">RNU ${id}</span>
+      <button class="remove-btn" onclick="removeEl('rn-${id}')">×</button>
+      <div class="field"><label>Nom du scoot</label><input type="text" id="rn${id}-nom" placeholder="Ex : BX-456"></div>`;
+    document.getElementById('rnu-list').appendChild(div);
+  }
+
+  function removeEl(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  function setStatus(key, val) {
+    document.getElementById(key + '-val').value = val;
+    document.getElementById(key + '-oui').className = 'status-btn' + (val === 'oui' ? ' sel-oui' : '');
+    document.getElementById(key + '-non').className = 'status-btn' + (val === 'non' ? ' sel-non' : '');
+  }
+
+  function toggleTrips() {
+    const ok = document.getElementById('trips-ok').checked;
+    document.getElementById('trips-detail').classList.toggle('hidden', ok);
+  }
+
+  function collectScooters() {
+    return Array.from(document.querySelectorAll('.scooter-item')).map(el => {
+      const id = el.id.replace('sc-', '');
+      return {
+        nom: document.getElementById('sc' + id + '-nom')?.value || '',
+        loc2hire: document.getElementById('sc' + id + '-loc2hire')?.value || '',
+        locuser: document.getElementById('sc' + id + '-locuser')?.value || '',
+        batterie: document.getElementById('sc' + id + '-bat')?.value || '',
+        depuis: document.getElementById('sc' + id + '-depuis')?.value || '',
+        action: document.getElementById('sc' + id + '-action')?.value || '',
+        urgence: document.getElementById('sc' + id + '-urgence')?.value || 'basse'
+      };
+    });
+  }
+
+  function collectRNU() {
+    return Array.from(document.querySelectorAll('.rnu-item')).map(el => {
+      const id = el.id.replace('rn-', '');
+      return { nom: document.getElementById('rn' + id + '-nom')?.value || '' };
+    });
+  }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3500);
+  }
+
+  async function submitPassation() {
+    const btn = document.getElementById('submit-btn');
+    const creePar = document.getElementById('creePar').value.trim();
+    const astreinte = document.getElementById('astreinte').value.trim();
+    const creneau = document.getElementById('creneau').value.trim();
+    if (!creePar) { showToast('Merci d\'indiquer votre prénom.', 'error'); return; }
+    if (!astreinte) { showToast('Merci d\'indiquer la personne d\'astreinte.', 'error'); return; }
+    if (!creneau) { showToast('Merci d\'indiquer le créneau du shift.', 'error'); return; }
+    btn.disabled = true;
+    btn.textContent = 'Envoi en cours...';
+    const tripsOk = document.getElementById('trips-ok').checked;
+    const payload = {
+      action: 'addPassation',
+      date: new Date().toISOString(),
+      creneau,
+      ville: document.getElementById('ville').value,
+      astreinte,
+      creePar,
+      vp: document.getElementById('vp-val').value,
+      vpComment: document.getElementById('vp-comment').value,
+      reports: document.getElementById('rep-val').value,
+      reportsComment: document.getElementById('rep-comment').value,
+      tripsOk: tripsOk ? 'Oui' : 'Non',
+      tripsDetail: tripsOk ? '' : document.getElementById('trips-text').value,
+      message: document.getElementById('message').value,
+      scooters: collectScooters(),
+      rnu: collectRNU()
+    };
+    try {
+      await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), mode: 'no-cors' });
+      showToast('Passation envoyée avec succès !', 'success');
+      resetForm();
+    } catch (e) {
+      showToast('Erreur lors de l\'envoi. Réessayez.', 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Envoyer la passation';
+  }
+
+  function resetForm() {
+    ['creePar', 'astreinte', 'creneau', 'message', 'vp-comment', 'rep-comment', 'trips-text'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('scooters-list').innerHTML = '';
+    document.getElementById('rnu-list').innerHTML = '';
+    document.getElementById('trips-ok').checked = false;
+    document.getElementById('trips-detail').classList.remove('hidden');
+    ['vp-val', 'rep-val'].forEach(id => document.getElementById(id).value = '');
+    ['vp-oui', 'vp-non', 'rep-oui', 'rep-non'].forEach(id => document.getElementById(id).className = 'status-btn');
+    sCount = 0; rCount = 0;
+  }
+
+  async function loadHistory() {
+    const list = document.getElementById('history-list');
+    list.innerHTML = '<div class="loading">Chargement...</div>';
+    const filterVille = document.getElementById('filter-ville').value;
+    try {
+      const res = await fetch(SCRIPT_URL + '?action=getPassations');
+      const data = await res.json();
+      let passations = (data.passations || []).reverse();
+      if (filterVille) passations = passations.filter(p => p.Ville === filterVille);
+      if (!passations.length) { list.innerHTML = '<div class="empty">Aucune passation trouvée.</div>'; return; }
+      list.innerHTML = passations.map(p => {
+        const date = new Date(p.Date);
+        const dateStr = isNaN(date) ? p.Date : date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const vpPill = p.VP ? `<span class="pill ${p.VP === 'oui' ? 'pill-ok' : 'pill-nok'}">VP : ${p.VP === 'oui' ? 'À jour' : 'Non à jour'}</span>` : '';
+        const repPill = p.Reports ? `<span class="pill ${p.Reports === 'oui' ? 'pill-ok' : 'pill-nok'}">Reports : ${p.Reports === 'oui' ? 'À jour' : 'Non à jour'}</span>` : '';
+        const tripsPill = p.TripsOk ? `<span class="pill ${p.TripsOk === 'Oui' ? 'pill-ok' : 'pill-nok'}">Trips : ${p.TripsOk === 'Oui' ? 'OK' : 'À vérifier'}</span>` : '';
+        return `<div class="passation-card">
+          <div class="passation-header">
+            <div>
+              <div class="passation-name">${p['Créé par'] || '—'} · ${p.Ville || '—'}</div>
+              <div class="passation-meta">${dateStr}</div>
+            </div>
+            ${p['Créneau'] ? `<span class="creneau-badge">${p['Créneau']}</span>` : ''}
+          </div>
+          ${p.Astreinte ? `<div class="astreinte-line">Astreinte : <strong>${p.Astreinte}</strong></div>` : ''}
+          <div class="pills">${vpPill}${repPill}${tripsPill}</div>
+          ${p.Message ? `<div class="msg-block">${p.Message}</div>` : ''}
+        </div>`;
+      }).join('');
+    } catch (e) {
+      list.innerHTML = '<div class="empty">Impossible de charger l\'historique.</div>';
+    }
+  }
+</script>
+</body>
+</html>
