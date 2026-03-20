@@ -395,10 +395,16 @@
         <div class="live-title">Etat de la flotte</div>
         <div class="live-updated" id="live-updated">—</div>
       </div>
-      <button class="refresh-btn" id="refresh-btn" onclick="loadLive()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        Actualiser
-      </button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="refresh-btn" id="seed-btn" onclick="injectDemoData()" style="border-color:rgba(244,80,0,0.3);color:#F45000">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Injecter démo
+        </button>
+        <button class="refresh-btn" id="refresh-btn" onclick="loadLive()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Actualiser
+        </button>
+      </div>
     </div>
     <div id="live-content"><div class="loading">Chargement...</div></div>
   </div>
@@ -437,7 +443,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby7IFxDivZZuRCPj65kYimgAs9-95tcsHacOLLVIsrJZCOXJv8eUW2tDvvVcohU-BODEQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXV7nsybkET2Icf_z4cbGRhxNh_jhiAY5rGbm1-8cY13wOgfGioS9QgS-2DcfaJKiMQQ/exec";
 const ACTIONS = ["A garder a l'oeil", "A aller check sur place", "Contacter le dernier utilisateur", "Ramener a l'atelier", "Deja pris en charge"];
 const DUREE_OPTIONS = ["-1h", "1h-3h", "3h-6h", "+6h"];
 let sCount = 0, rCount = 0, currentStep = 1, rapportWeekOffset = 0;
@@ -1098,6 +1104,98 @@ async function exportRapport() {
     showToast('Rapport exporte dans Google Sheets !','success');
   } catch(e){showToast('Erreur export.','error');}
   btn.disabled=false;btn.textContent='Exporter Sheets';
+}
+
+// ─── DEMO DATA INJECTION ───
+async function injectDemoData() {
+  const btn = document.getElementById('seed-btn');
+  if (!confirm('Injecter une semaine de données de démonstration dans le Google Sheet ? (semaine du 23 au 29 mars 2026)')) return;
+  btn.disabled = true; btn.textContent = 'Injection...';
+
+  const uid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r=Math.random()*16|0; return (c=='x'?r:(r&0x3|0x8)).toString(16); });
+
+  const passations = [];
+  const scooters = [];
+  const rnus = [];
+
+  const mkDate = (day, hour, min=0) => {
+    const d = new Date(2026, 2, day, hour, min, 0);
+    return d.toISOString();
+  };
+
+  const addPass = (day, h, creneau, auteur, vp, reports, trips, tripsDetail, msg) => {
+    const id = uid();
+    passations.push({ id, date: mkDate(day, h), creneau, ville: 'Bordeaux', astreinte: 'Jerome (0621948656)', creePar: auteur, vp: vp?'oui':'non', vpComment: '', reports: reports?'oui':'non', reportsComment: '', tripsOk: trips?'Oui':'Non', tripsDetail: tripsDetail||'', message: msg });
+    return id;
+  };
+
+  const addSc = (pid, nom, loc, locuser, bat, depuis, action) => {
+    scooters.push({ id: uid(), idPassation: pid, nom, loc2hire: loc, locuser: locuser||'', batterie: String(bat), depuis, action, urgence: '' });
+  };
+
+  const addRnu = (pid, nom) => {
+    rnus.push({ id: uid(), idPassation: pid, nom });
+  };
+
+  // LUNDI 23
+  let p = addPass(23, 6, '6h-14h', 'Romain', true, true, true, '', 'Démarrage de semaine nickel, flotte propre.');
+  p = addPass(23, 14, '14h-22h', 'Alice', true, true, true, '', 'BX-047 offline depuis 14h30, batterie faible.');
+  addSc(p, 'BX-047', 'Cours de la Marne', '', 22, '1h-3h', "A garder a l'oeil");
+  p = addPass(23, 22, '22h-6h', 'Thierry', true, true, true, '', 'BX-047 toujours là, batterie critique. Demande check terrain dès demain matin.');
+  addSc(p, 'BX-047', 'Cours de la Marne', '', 8, '3h-6h', 'A aller check sur place');
+
+  // MARDI 24
+  p = addPass(24, 6, '6h-14h', 'Martin', true, false, true, '', 'BX-047 à ramener d\'urgence. Reports pas à jour.');
+  addSc(p, 'BX-047', 'Cours de la Marne', '', 3, '+6h', "Ramener a l'atelier");
+  addRnu(p, 'BX-112');
+  p = addPass(24, 14, '14h-22h', 'Jerome', true, true, false, 'Trip long BX-089 (35min), utilisateur contacté', 'BX-047 récupéré ! BX-112 toujours en RNU, problème de frein.');
+  addRnu(p, 'BX-112');
+  p = addPass(24, 22, '22h-6h', 'Philippine', true, true, true, '', 'Nouveau offline BX-203, vient juste de tomber.');
+  addSc(p, 'BX-203', 'Place de la Victoire', '', 31, '-1h', "A garder a l'oeil");
+
+  // MERCREDI 25
+  p = addPass(25, 6, '6h-14h', 'Romain', true, true, true, '', 'BX-203 résolu dans la nuit, flotte OK ce matin.');
+  p = addPass(25, 14, '14h-22h', 'Melvil', false, true, true, '', 'VP pas à jour. BX-078 peut-être chute, dernier user contacté.');
+  addSc(p, 'BX-078', 'Rue Sainte-Catherine', '', 45, '1h-3h', 'Contacter le dernier utilisateur');
+  p = addPass(25, 22, '22h-6h', 'Alice', true, true, true, '', 'BX-078 toujours là.');
+  addSc(p, 'BX-078', 'Rue Sainte-Catherine', '', 28, '3h-6h', 'A aller check sur place');
+
+  // JEUDI 26
+  p = addPass(26, 6, '6h-14h', 'Martin', true, true, true, '', 'Grosse matinée. BX-078 à récupérer, BX-301 nouveau offline, BX-156 en RNU (problème GPS).');
+  addSc(p, 'BX-078', 'Rue Sainte-Catherine', '', 12, '+6h', "Ramener a l'atelier");
+  addSc(p, 'BX-301', 'Quai de Paludate', '', 19, '-1h', "A garder a l'oeil");
+  addRnu(p, 'BX-156');
+  p = addPass(26, 14, '14h-22h', 'Thierry', true, true, true, '', 'BX-078 ramené ! BX-301 encore là, batterie qui baisse.');
+  addSc(p, 'BX-301', 'Quai de Paludate', '', 14, '1h-3h', 'Contacter le dernier utilisateur');
+  addRnu(p, 'BX-156');
+  p = addPass(26, 22, '22h-6h', 'Jerome', true, true, true, '', 'BX-301 récupéré. BX-156 réparé. Flotte propre pour la nuit.');
+
+  // VENDREDI 27
+  p = addPass(27, 6, '6h-14h', 'Romain', true, true, true, '', 'Top, rien à signaler.');
+  p = addPass(27, 14, '14h-22h', 'Philippine', true, false, false, 'Trip long BX-089 (35min), utilisateur unreachable', 'VP et reports pas à jour. BX-047 encore offline !');
+  addSc(p, 'BX-047', 'Médiathèque Mériadeck', '', 27, '1h-3h', "A garder a l'oeil / Contacter le dernier utilisateur");
+  p = addPass(27, 22, '22h-6h', 'Martin', true, true, true, '', 'BX-047 récurrent cette semaine, à surveiller.');
+  addSc(p, 'BX-047', 'Médiathèque Mériadeck', '', 11, '3h-6h', 'A aller check sur place');
+
+  // SAMEDI 28
+  p = addPass(28, 6, '6h-14h', 'Alice', true, true, true, '', 'BX-047 à sortir du circuit, 3ème incident cette semaine.');
+  addSc(p, 'BX-047', 'Médiathèque Mériadeck', '', 5, '+6h', "Ramener a l'atelier");
+  p = addPass(28, 14, '14h-22h', 'Melvil', true, true, true, '', 'BX-047 récupéré ce matin. Flotte nickel cet aprem.');
+  p = addPass(28, 22, '22h-6h', 'Thierry', true, true, true, '', 'Nuit tranquille. Bonne semaine à tous.');
+
+  // DIMANCHE 29
+  p = addPass(29, 6, '6h-14h', 'Jerome', true, true, true, '', 'RAS.');
+  p = addPass(29, 14, '14h-22h', 'Romain', true, true, true, '', 'Nouveau offline en fin de shift, à suivre ce soir.');
+  addSc(p, 'BX-412', 'Gare Saint-Jean', '', 38, '-1h', "A garder a l'oeil");
+  p = addPass(29, 22, '22h-6h', 'Philippine', true, true, true, '', 'BX-412 toujours là, dernier user contacté.');
+  addSc(p, 'BX-412', 'Gare Saint-Jean', '', 22, '1h-3h', 'Contacter le dernier utilisateur');
+
+  try {
+    await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'seedData', passations, scooters, rnus }), mode: 'no-cors' });
+    showToast('Données de démo injectées ! Actualise les onglets.', 'success');
+  } catch(e) { showToast('Erreur injection.', 'error'); }
+
+  btn.disabled = false; btn.textContent = 'Injecter démo';
 }
 
 initAstreinte();
