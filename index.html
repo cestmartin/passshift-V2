@@ -274,16 +274,18 @@
         <div class="row2">
           <div class="field">
             <label>Créneau <span class="required-star">*</span></label>
-            <input type="text" id="creneau" placeholder="Ex : 6h-14h">
+            <div style="display:flex;gap:6px">
+              <input type="text" id="creneau" placeholder="Ex : 14h30-18h" style="flex:1">
+              <button type="button" onclick="setNow()" style="padding:0 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--orange-dim);color:var(--orange);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">Maintenant</button>
+            </div>
             <div class="error-msg" id="err-creneau">Merci d'indiquer le créneau</div>
           </div>
           <div class="field">
             <label>Votre prénom <span class="required-star">*</span></label>
-            <input type="text" id="creePar" placeholder="Ex : Clément">
+            <input type="text" id="creePar" placeholder="Ex : Clément" oninput="savePrenom(this.value)">
             <div class="error-msg" id="err-creePar">Merci d'indiquer votre prénom</div>
           </div>
         </div>
-
         <div class="field">
           <label>Personne d'astreinte</label>
           <div class="astreinte-auto">
@@ -301,6 +303,7 @@
 
     <!-- ETAPE 2 : Scooters offline + RNU -->
     <div id="step-2" class="hidden">
+      <div id="prev-offline-banner"></div>
       <div class="section">
         <div class="section-header"><div class="section-icon">🛵</div><div><div class="section-title">Scooters offline</div></div></div>
         <div id="scooters-list"></div>
@@ -500,6 +503,7 @@ function goToStep(n) {
   }
   currentStep = n;
   window.scrollTo(0,0);
+  if (n === 2) loadPrevOfflines();
 }
 
 function nextStep(from) {
@@ -760,6 +764,7 @@ async function submitPassation() {
 function resetForm() {
   ['creePar','creneau','message','vp-comment','rep-comment','trips-text'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('prev-passation-wrap').innerHTML='';
+  document.getElementById('prev-offline-banner').innerHTML='';
   document.getElementById('scooters-list').innerHTML='';
   document.getElementById('rnu-list').innerHTML='';
   document.getElementById('trips-ok').checked=false;
@@ -1198,7 +1203,108 @@ async function injectDemoData() {
   btn.disabled = false; btn.textContent = 'Injecter démo';
 }
 
+// ─── QUICK HELPERS ───
+function setNow() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  const mo = String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('creneau').value = `${d}/${mo} ${h}h${m}`;
+  showErr('creneau', false);
+}
+
+function savePrenom(val) {
+  try { localStorage.setItem('passshift_prenom', val); } catch(e) {}
+}
+
+function loadPrenom() {
+  try {
+    const saved = localStorage.getItem('passshift_prenom');
+    if (saved) document.getElementById('creePar').value = saved;
+  } catch(e) {}
+}
+
+async function loadPrevOfflines() {
+  const banner = document.getElementById('prev-offline-banner');
+  banner.innerHTML = '';
+  try {
+    const [r1, r2] = await Promise.all([
+      fetch(SCRIPT_URL + '?action=getPassations'),
+      fetch(SCRIPT_URL + '?action=getScooters')
+    ]);
+    const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+    const passations = (d1.passations||[]).sort((a,b) => new Date(b.Date)-new Date(a.Date));
+    if (!passations.length) return;
+    const lastPass = passations[0];
+    const prevScooters = (d2.scooters||[]).filter(s => s.ID_Passation === lastPass.ID);
+    if (!prevScooters.length) return;
+
+    const lastDate = new Date(lastPass.Date);
+    const dateStr = isNaN(lastDate) ? '' : lastDate.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+
+    let html = `<div style="background:var(--warn-dim);border:1px solid rgba(243,156,18,0.3);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem">
+      <div style="font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">
+        Passation précédente · ${dateStr} · ${lastPass['Créé par']||'—'} — Ces scooters étaient offline
+      </div>`;
+
+    prevScooters.forEach(s => {
+      const safeNom = (s.Nom||'').replace(/'/g,"\\'");
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface);border-radius:var(--radius);margin-bottom:6px;gap:8px">
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text)">${s.Nom||'—'}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${s.Loc2hire||''}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button onclick="addScooterFromPrev('${safeNom}','${(s.Loc2hire||'').replace(/'/g,"\\'")}','${(s.LocUser||'').replace(/'/g,"\\'")}','${s.Batterie||''}','${(s.Action||'').replace(/'/g,"\\'")}',this)" style="padding:6px 12px;background:var(--warn-dim);border:1px solid rgba(243,156,18,0.4);border-radius:var(--radius);font-size:12px;font-weight:700;cursor:pointer;color:#854F0B;font-family:inherit">Toujours offline</button>
+          <button onclick="markResolved(this)" style="padding:6px 12px;background:var(--success-dim);border:1px solid rgba(46,204,113,0.3);border-radius:var(--radius);font-size:12px;font-weight:700;cursor:pointer;color:var(--success);font-family:inherit">Resolu</button>
+        </div>
+      </div>`;
+    });
+
+    html += `</div>`;
+    banner.innerHTML = html;
+  } catch(e) { /* silently fail */ }
+}
+
+function addScooterFromPrev(nom, loc2hire, locuser, batterie, action, btn) {
+  addScooter();
+  const id = sCount;
+  if (nom) document.getElementById(`sc${id}-nom`).value = nom;
+  if (loc2hire) document.getElementById(`sc${id}-loc2hire`).value = loc2hire;
+  if (locuser) document.getElementById(`sc${id}-locuser`).value = locuser;
+  if (batterie) document.getElementById(`sc${id}-bat`).value = batterie;
+  // Pre-check matching actions
+  if (action) {
+    ACTIONS.forEach((a, i) => {
+      if (action.includes(a)) {
+        const cb = document.getElementById(`sc${id}-action-${i}`);
+        if (cb) { cb.checked = true; toggleActionCheck(id, i); }
+      }
+    });
+  }
+  // Mark this prev scooter row as handled
+  const row = btn.closest('div[style*="display:flex"]');
+  if (row) {
+    row.style.opacity = '0.4';
+    row.style.pointerEvents = 'none';
+    row.innerHTML += `<span style="font-size:11px;color:var(--warn);font-weight:600;margin-left:8px">Ajouté</span>`;
+  }
+  showToast(`${nom} ajouté au formulaire`, 'success');
+}
+
+function markResolved(btn) {
+  const row = btn.closest('div[style*="display:flex"]');
+  if (row) {
+    row.style.opacity = '0.35';
+    row.style.pointerEvents = 'none';
+    const nom = row.querySelector('div[style*="Barlow Condensed"]')?.textContent || '';
+    row.innerHTML += `<span style="font-size:11px;color:var(--success);font-weight:600">Marqué résolu</span>`;
+  }
+}
+
 initAstreinte();
+loadPrenom();
 </script>
 </body>
 </html>
