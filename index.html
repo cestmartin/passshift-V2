@@ -441,7 +441,7 @@ function nextStep(from) {
     const noScooters = document.querySelectorAll('.scooter-item').length === 0;
     const noRNU = document.querySelectorAll('.rnu-item').length === 0;
     if (noScooters && noRNU) {
-      showModal("Aucun scooter offline et aucun RNU renseigné. Tu as bien vérifié toutes les zones de Bordeaux ?", () => goToStep(3));
+      showModal("Aucun scooter offline et aucun RNU renseigné. Tu as bien vérifié toutes les villes, même hors Bordeaux ?", () => goToStep(3));
       return;
     }
   }
