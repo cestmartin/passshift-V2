@@ -174,6 +174,50 @@
     .filter-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
     .filter-btn { padding: 6px 14px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); border-radius: 20px; background: transparent; cursor: pointer; color: var(--text-muted); font-family: 'Barlow', sans-serif; transition: all 0.15s; }
     .filter-btn.active { background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
+
+    /* LIVE TAB */
+    .live-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 10px; }
+    .live-title { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+    .live-updated { font-size: 12px; color: var(--text-dim); }
+    .refresh-btn { padding: 8px 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); cursor: pointer; color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+    .refresh-btn:hover { border-color: var(--orange); color: var(--orange); }
+    .refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .astreinte-card { background: var(--orange); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .astreinte-card-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+    .astreinte-card-name { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 800; color: white; line-height: 1; }
+    .astreinte-card-phone { font-size: 14px; color: rgba(255,255,255,0.85); margin-top: 3px; }
+    .astreinte-card-icon { font-size: 32px; opacity: 0.3; }
+
+    .live-stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+    .live-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+    .live-stat-num { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 800; line-height: 1; }
+    .live-stat-label { font-size: 10px; color: var(--text-muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+
+    .offline-card { border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px; border-left: 5px solid; position: relative; }
+    .offline-card.level-critical { background: rgba(231,76,60,0.08); border-color: var(--danger); }
+    .offline-card.level-warn { background: rgba(243,156,18,0.08); border-color: var(--warn); }
+    .offline-card.level-ok { background: rgba(46,204,113,0.06); border-color: var(--success); }
+    .offline-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
+    .offline-card-nom { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); }
+    .offline-duration { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+    .duration-critical { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(231,76,60,0.3); }
+    .duration-warn { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(243,156,18,0.3); }
+    .duration-ok { background: var(--success-dim); color: var(--success); border: 1px solid rgba(46,204,113,0.3); }
+    .offline-card-details { font-size: 13px; color: var(--text-muted); line-height: 1.8; }
+    .offline-card-details strong { color: var(--text); }
+    .offline-card-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+    .action-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+    .offline-count-badge { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+
+    .rnu-card { background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .rnu-card-nom { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); }
+    .rnu-card-meta { font-size: 12px; color: var(--text-muted); }
+    .live-section-title { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+    .live-section-count { background: var(--surface2); border-radius: 20px; padding: 2px 10px; font-size: 12px; color: var(--text-muted); }
+    .live-empty { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 14px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); }
+    .filter-btn.active { background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
     .empty { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 14px; }
     .loading { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 14px; }
 
@@ -210,6 +254,7 @@
   <div class="tabs">
     <button class="tab active" onclick="switchTab('form', this)">Nouvelle passation</button>
     <button class="tab" onclick="switchTab('history', this)">Historique</button>
+    <button class="tab" onclick="switchTab('live', this)">Live</button>
     <button class="tab" onclick="switchTab('rapport', this)">Rapport</button>
   </div>
 
@@ -343,6 +388,21 @@
     <div id="history-list"><div class="loading">Chargement...</div></div>
   </div>
 
+  <!-- LIVE -->
+  <div id="view-live" class="view">
+    <div class="live-header">
+      <div>
+        <div class="live-title">Etat de la flotte</div>
+        <div class="live-updated" id="live-updated">—</div>
+      </div>
+      <button class="refresh-btn" id="refresh-btn" onclick="loadLive()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Actualiser
+      </button>
+    </div>
+    <div id="live-content"><div class="loading">Chargement...</div></div>
+  </div>
+
   <!-- RAPPORT -->
   <div id="view-rapport" class="view">
     <div class="rapport-toolbar">
@@ -418,6 +478,7 @@ function switchTab(tab, el) {
   el.classList.add('active');
   document.getElementById('view-'+tab).classList.add('active');
   if (tab==='history') loadHistory();
+  if (tab==='live') loadLive();
   if (tab==='rapport') loadRapport();
 }
 
@@ -743,6 +804,136 @@ function sendToWhatsApp(passationId) {
   const rnus=(window._rnus||[]).filter(r=>r.ID_Passation===passationId);
   if(!p) return;
   window.open('https://wa.me/?text='+encodeURIComponent(buildWhatsAppText(p,scooters,rnus)),'_blank');
+}
+
+// ─── LIVE ───
+async function loadLive() {
+  const content = document.getElementById('live-content');
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  content.innerHTML = '<div class="loading">Chargement...</div>';
+
+  try {
+    const [r1, r2, r3] = await Promise.all([
+      fetch(SCRIPT_URL + '?action=getPassations'),
+      fetch(SCRIPT_URL + '?action=getScooters'),
+      fetch(SCRIPT_URL + '?action=getRNU')
+    ]);
+    const [d1, d2, d3] = await Promise.all([r1.json(), r2.json(), r3.json()]);
+    const allPassations = (d1.passations||[]).sort((a,b) => new Date(a.Date)-new Date(b.Date));
+    const allScooters = d2.scooters||[];
+    const allRnus = d3.rnu||[];
+
+    // Build incidents to find currently offline scooters
+    const incidents = buildIncidents(allPassations, allScooters);
+    const currentlyOffline = incidents.filter(i => i.statut === 'en-cours');
+
+    // Current RNU — from last passation
+    const lastPassation = allPassations[allPassations.length - 1];
+    const currentRnus = lastPassation ? allRnus.filter(r => r.ID_Passation === lastPassation.ID) : [];
+
+    // Astreinte
+    const astreinte = getAstreinte(new Date());
+
+    // Sort offline by duration desc
+    currentlyOffline.sort((a,b) => b.dureeMs - a.dureeMs);
+
+    const now = new Date();
+    document.getElementById('live-updated').textContent = 'Mis à jour le ' + now.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+
+    const getDurationLevel = ms => {
+      const h = ms / 3600000;
+      if (h > 8) return 'critical';
+      if (h > 3) return 'warn';
+      return 'ok';
+    };
+    const getDurationClass = ms => {
+      const level = getDurationLevel(ms);
+      if (level === 'critical') return 'duration-critical';
+      if (level === 'warn') return 'duration-warn';
+      return 'duration-ok';
+    };
+    const getCardClass = ms => {
+      const level = getDurationLevel(ms);
+      if (level === 'critical') return 'level-critical';
+      if (level === 'warn') return 'level-warn';
+      return 'level-ok';
+    };
+
+    const criticalCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs) === 'critical').length;
+    const warnCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs) === 'warn').length;
+    const okCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs) === 'ok').length;
+
+    let html = '';
+
+    // Astreinte card
+    html += `<div class="astreinte-card">
+      <div>
+        <div class="astreinte-card-label">Astreinte en cours</div>
+        <div class="astreinte-card-name">${astreinte?.nom || '—'}</div>
+        <div class="astreinte-card-phone">${astreinte?.tel || ''}</div>
+      </div>
+      <div class="astreinte-card-icon">🚨</div>
+    </div>`;
+
+    // Stats row
+    html += `<div class="live-stat-row">
+      <div class="live-stat"><div class="live-stat-num" style="color:var(--danger)">${criticalCount}</div><div class="live-stat-label">Critique +8h</div></div>
+      <div class="live-stat"><div class="live-stat-num" style="color:var(--warn)">${warnCount}</div><div class="live-stat-label">A surveiller 3-8h</div></div>
+      <div class="live-stat"><div class="live-stat-num" style="color:var(--success)">${okCount}</div><div class="live-stat-label">Recent -3h</div></div>
+    </div>`;
+
+    // Offline scooters
+    html += `<div class="live-section-title">Scooters offline <span class="live-section-count">${currentlyOffline.length}</span></div>`;
+    if (currentlyOffline.length === 0) {
+      html += `<div class="live-empty">Aucun scooter offline en ce moment</div>`;
+    } else {
+      currentlyOffline.forEach(inc => {
+        const dureeStr = formatDuree(inc.dureeMs);
+        const cardClass = getCardClass(inc.dureeMs);
+        const durClass = getDurationClass(inc.dureeMs);
+        const actions = inc.action ? inc.action.split(' / ').filter(Boolean) : [];
+
+        // Find all scooter entries for this incident to get latest location
+        const scooterEntries = allScooters.filter(s => s.Nom === inc.nom);
+        const latest = scooterEntries[scooterEntries.length - 1] || {};
+
+        html += `<div class="offline-card ${cardClass}">
+          <div class="offline-card-top">
+            <div class="offline-card-nom">${inc.nom}</div>
+            <div class="offline-duration ${durClass}">${dureeStr}</div>
+          </div>
+          <div class="offline-card-details">
+            ${latest.Loc2hire ? `<strong>2hire :</strong> ${latest.Loc2hire}<br>` : ''}
+            ${latest.LocUser ? `<strong>Utilisateur :</strong> ${latest.LocUser}<br>` : ''}
+            ${latest.Batterie ? `<strong>Batterie :</strong> ${latest.Batterie}%<br>` : ''}
+            <strong>Signalé :</strong> ${inc.nbPassations} fois · Par ${inc.par}
+          </div>
+          ${actions.length > 0 ? `<div class="offline-card-actions">${actions.map(a=>`<span class="action-tag">${a}</span>`).join('')}</div>` : ''}
+        </div>`;
+      });
+    }
+
+    // RNU section
+    html += `<div class="live-section-title" style="margin-top:1rem">RNU en cours <span class="live-section-count">${currentRnus.length}</span></div>`;
+    if (currentRnus.length === 0) {
+      html += `<div class="live-empty">Aucun RNU en ce moment</div>`;
+    } else {
+      const passDate = lastPassation ? new Date(lastPassation.Date) : null;
+      const passDateStr = passDate && !isNaN(passDate) ? passDate.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      currentRnus.forEach(r => {
+        html += `<div class="rnu-card">
+          <div class="rnu-card-nom">${r.Nom||'—'}</div>
+          <div class="rnu-card-meta">Dernière passation · ${passDateStr}</div>
+        </div>`;
+      });
+    }
+
+    content.innerHTML = html;
+  } catch(e) {
+    content.innerHTML = '<div class="live-empty">Impossible de charger les données.</div>';
+  }
+  btn.classList.remove('spinning');
 }
 
 // ─── HISTORY ───
