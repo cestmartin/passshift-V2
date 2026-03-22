@@ -1232,7 +1232,7 @@ async function exportRapport() {
 // ─── DEMO DATA INJECTION ───
 async function injectDemoData() {
   const btn = document.getElementById('seed-btn');
-  if (!confirm('Injecter 6 semaines de données de démonstration ? (1er mars → 12 avril 2026)')) return;
+  if (!confirm(`Injecter 6 semaines historiques + passations récentes datées d'aujourd'hui (${new Date().toLocaleDateString('fr-FR')}) ?`)) return;
   btn.disabled = true; btn.textContent = 'Injection...';
 
   const uid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r=Math.random()*16|0; return (c=='x'?r:(r&0x3|0x8)).toString(16); });
@@ -1464,14 +1464,15 @@ async function injectDemoData() {
   // Utilise la date réelle d'aujourd'hui
   const today = new Date();
   const mkToday = (daysAgo, h, min=0) => {
-    const d = new Date(today);
+    const d = new Date();
     d.setDate(d.getDate() - daysAgo);
     d.setHours(h, min, 0, 0);
     return d.toISOString();
   };
   const addPassToday = (daysAgo, h, cr, auteur, vp, reports, trips, tripsDetail, msg) => {
     const id = uid();
-    passations.push({ id, date: mkToday(daysAgo, h), creneau:cr, ville:'Bordeaux', astreinte:getAstr(2,23), creePar:auteur, vp:vp?'oui':'non', vpComment:'', reports:reports?'oui':'non', reportsComment:'', tripsOk:trips?'Oui':'Non', tripsDetail:tripsDetail||'', message:msg });
+    const astr = 'Antoine (06 49 95 11 67)';
+    passations.push({ id, date: mkToday(daysAgo, h), creneau:cr, ville:'Bordeaux', astreinte:astr, creePar:auteur, vp:vp?'oui':'non', vpComment:'', reports:reports?'oui':'non', reportsComment:'', tripsOk:trips?'Oui':'Non', tripsDetail:tripsDetail||'', message:msg });
     return id;
   };
   const addScToday = (pid, nom, loc, locuser, bat, depuis, action) =>
