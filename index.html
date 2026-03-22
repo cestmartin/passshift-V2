@@ -938,108 +938,123 @@ async function loadLive() {
     const allScooters = d2.scooters||[];
     const allRnus = d3.rnu||[];
 
-    // Build incidents to find currently offline scooters
+    // Tous les incidents non résolus — quelle que soit leur date
     const incidents = buildIncidents(allPassations, allScooters);
     const currentlyOffline = incidents.filter(i => i.statut === 'en-cours');
+    currentlyOffline.sort((a,b) => b.dureeMs - a.dureeMs);
 
-    // Current RNU — from last passation
-    const lastPassation = allPassations[allPassations.length - 1];
-    const currentRnus = lastPassation ? allRnus.filter(r => r.ID_Passation === lastPassation.ID) : [];
+    // RNU : tous les noms qui apparaissent dans une passation mais pas dans une passation suivante sans eux
+    const rnuMap = {};
+    allPassations.forEach(p => {
+      const pRnus = allRnus.filter(r => r.ID_Passation === p.ID);
+      pRnus.forEach(r => { if (r.Nom) rnuMap[r.Nom] = { nom: r.Nom, date: p.Date, par: p['Créé par'] }; });
+    });
+    // Un RNU est "en cours" si son nom apparaît dans la dernière passation qui le mentionne
+    // et n'apparaît dans aucune passation APRÈS sans lui. Simplifié : on prend tous les RNU uniques des 3 dernières passations
+    const lastPasses = allPassations.slice(-3);
+    const activeRnus = [];
+    const seenRnu = new Set();
+    [...lastPasses].reverse().forEach(p => {
+      allRnus.filter(r => r.ID_Passation === p.ID).forEach(r => {
+        if (r.Nom && !seenRnu.has(r.Nom)) {
+          seenRnu.add(r.Nom);
+          activeRnus.push({ nom: r.Nom, date: p.Date, par: p['Créé par'] });
+        }
+      });
+    });
+
+    // Dernière passation pour contexte
+    const lastPass = allPassations[allPassations.length - 1];
+    const lastPassDate = lastPass ? new Date(lastPass.Date) : null;
+    const lastPassStr = lastPassDate && !isNaN(lastPassDate) ? lastPassDate.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
 
     // Astreinte
     const astreinte = getAstreinte(new Date());
 
-    // Sort offline by duration desc
-    currentlyOffline.sort((a,b) => b.dureeMs - a.dureeMs);
-
     const now = new Date();
-    document.getElementById('live-updated').textContent = 'Mis à jour le ' + now.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('live-updated').textContent = 'Mis à jour ' + now.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 
-    const getDurationLevel = ms => {
-      const h = ms / 3600000;
-      if (h > 8) return 'critical';
-      if (h > 3) return 'warn';
-      return 'ok';
-    };
-    const getDurationClass = ms => {
-      const level = getDurationLevel(ms);
-      if (level === 'critical') return 'duration-critical';
-      if (level === 'warn') return 'duration-warn';
-      return 'duration-ok';
-    };
-    const getCardClass = ms => {
-      const level = getDurationLevel(ms);
-      if (level === 'critical') return 'level-critical';
-      if (level === 'warn') return 'level-warn';
-      return 'level-ok';
-    };
+    const getDurationLevel = ms => { const h=ms/3600000; if(h>8)return 'critical'; if(h>3)return 'warn'; return 'ok'; };
+    const getDurationClass = ms => { const l=getDurationLevel(ms); return l==='critical'?'duration-critical':l==='warn'?'duration-warn':'duration-ok'; };
+    const getCardClass = ms => { const l=getDurationLevel(ms); return l==='critical'?'level-critical':l==='warn'?'level-warn':'level-ok'; };
 
-    const criticalCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs) === 'critical').length;
-    const warnCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs) === 'warn').length;
-    const okCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs) === 'ok').length;
+    const criticalCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs)==='critical').length;
+    const warnCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs)==='warn').length;
+    const okCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs)==='ok').length;
 
     let html = '';
 
-    // Astreinte card
-    html += `<div class="astreinte-card">
+    // Astreinte
+    html += `<div class="astr-card glass-o" style="border-radius:var(--r2);padding:1.1rem 1.4rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div>
-        <div class="astreinte-card-label">Astreinte en cours</div>
-        <div class="astreinte-card-name">${astreinte?.nom || '—'}</div>
-        <div class="astreinte-card-phone">${astreinte?.tel || ''}</div>
+        <div style="font-size:10px;font-weight:500;color:rgba(255,190,120,0.65);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px">Astreinte en cours</div>
+        <div style="font-size:30px;font-weight:700;color:white;letter-spacing:-0.8px;line-height:1">${astreinte?.nom || '—'}</div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.55);margin-top:3px;font-family:var(--mono)">${astreinte?.tel ? astreinte.tel.replace(/(\d{2})(?=\d)/g,'$1 ').trim() : '—'}</div>
       </div>
-      <div class="astreinte-card-icon">🚨</div>
+      <div style="width:46px;height:46px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.16);flex-shrink:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,190,120,0.85)" stroke-width="1.7" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>
+      </div>
     </div>`;
 
-    // Stats row
+    // Dernière passation
+    if (lastPass) {
+      const vpOk = lastPass.VP === 'oui';
+      const repOk = lastPass.Reports === 'oui';
+      const tripsOk = lastPass.TripsOk === 'Oui';
+      html += `<div class="glass" style="border-radius:var(--r2);padding:1rem 1.25rem;margin-bottom:1.25rem">
+        <div style="font-size:10px;font-weight:500;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">Dernière passation · ${lastPassStr} · ${lastPass['Créé par']||'—'}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;background:${vpOk?'rgba(48,209,88,0.12)':'rgba(255,69,58,0.11)'};color:${vpOk?'#30D158':'#FF453A'};border:1px solid ${vpOk?'rgba(48,209,88,0.22)':'rgba(255,69,58,0.22)'}">VP ${vpOk?'ok':'NOK'}</span>
+          <span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;background:${repOk?'rgba(48,209,88,0.12)':'rgba(255,69,58,0.11)'};color:${repOk?'#30D158':'#FF453A'};border:1px solid ${repOk?'rgba(48,209,88,0.22)':'rgba(255,69,58,0.22)'}">Reports ${repOk?'ok':'NOK'}</span>
+          <span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;background:${tripsOk?'rgba(48,209,88,0.12)':'rgba(255,214,10,0.1)'};color:${tripsOk?'#30D158':'#FFD60A'};border:1px solid ${tripsOk?'rgba(48,209,88,0.22)':'rgba(255,214,10,0.25)'}">Trips ${tripsOk?'ok':'à vérifier'}</span>
+        </div>
+        ${lastPass.Message ? `<div style="font-size:13px;color:rgba(255,255,255,0.45);margin-top:8px;font-weight:300;border-left:2px solid var(--o);padding-left:10px">${lastPass.Message}</div>` : ''}
+      </div>`;
+    }
+
+    // Stats
     html += `<div class="live-stat-row">
-      <div class="live-stat"><div class="live-stat-num" style="color:#FF453A">${criticalCount}</div><div class="live-stat-label">Critique +8h</div></div>
-      <div class="live-stat"><div class="live-stat-num" style="color:#FFD60A">${warnCount}</div><div class="live-stat-label">A surveiller 3-8h</div></div>
-      <div class="live-stat"><div class="live-stat-num" style="color:#30D158">${okCount}</div><div class="live-stat-label">Recent -3h</div></div>
+      <div class="live-stat glass"><div class="live-stat-num" style="color:#FF453A">${criticalCount}</div><div class="live-stat-label">Critique +8h</div></div>
+      <div class="live-stat glass"><div class="live-stat-num" style="color:#FFD60A">${warnCount}</div><div class="live-stat-label">3–8h</div></div>
+      <div class="live-stat glass"><div class="live-stat-num" style="color:#30D158">${okCount}</div><div class="live-stat-label">Récent -3h</div></div>
     </div>`;
 
-    // Offline scooters
+    // Offline
     html += `<div class="live-section-title">Scooters offline <span class="live-section-count">${currentlyOffline.length}</span></div>`;
-    if (currentlyOffline.length === 0) {
-      html += `<div class="live-empty">Aucun scooter offline en ce moment</div>`;
+    if (!currentlyOffline.length) {
+      html += `<div class="live-empty glass">Aucun scooter offline en ce moment</div>`;
     } else {
       currentlyOffline.forEach(inc => {
         const dureeStr = formatDuree(inc.dureeMs);
-        const cardClass = getCardClass(inc.dureeMs);
-        const durClass = getDurationClass(inc.dureeMs);
-        const actions = inc.action ? inc.action.split(' / ').filter(Boolean) : [];
-
-        // Find all scooter entries for this incident to get latest location
         const scooterEntries = allScooters.filter(s => s.Nom === inc.nom);
-        const latest = scooterEntries[scooterEntries.length - 1] || {};
-
-        html += `<div class="offline-card ${cardClass}">
+        const latest = scooterEntries[scooterEntries.length-1] || {};
+        const actions = inc.action ? inc.action.split(' / ').filter(Boolean) : [];
+        const fmtDebut = inc.dateDebut instanceof Date && !isNaN(inc.dateDebut) ? inc.dateDebut.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+        html += `<div class="offline-card ${getCardClass(inc.dureeMs)}">
           <div class="offline-card-top">
             <div class="offline-card-nom">${inc.nom}</div>
-            <div class="offline-duration ${durClass}">${dureeStr}</div>
+            <div class="offline-duration ${getDurationClass(inc.dureeMs)}">${dureeStr}</div>
           </div>
           <div class="offline-card-details">
-            ${latest.Loc2hire ? `<strong>2hire :</strong> ${latest.Loc2hire}<br>` : ''}
-            ${latest.LocUser ? `<strong>Utilisateur :</strong> ${latest.LocUser}<br>` : ''}
-            ${latest.Batterie ? `<strong>Batterie :</strong> ${latest.Batterie}%<br>` : ''}
-            <strong>Signalé :</strong> ${inc.nbPassations} fois · Par ${inc.par}
+            ${latest.Loc2hire?`<strong>2hire :</strong> ${latest.Loc2hire}<br>`:''}
+            ${latest.LocUser?`<strong>Utilisateur :</strong> ${latest.LocUser}<br>`:''}
+            ${latest.Batterie?`<strong>Batterie :</strong> ${latest.Batterie}%<br>`:''}
+            <strong>Depuis :</strong> ${fmtDebut} · Signalé ${inc.nbPassations}× · ${inc.par}
           </div>
-          ${actions.length > 0 ? `<div class="offline-card-actions">${actions.map(a=>`<span class="action-tag">${a}</span>`).join('')}</div>` : ''}
+          ${actions.length?`<div class="offline-card-actions">${actions.map(a=>`<span class="action-tag">${a}</span>`).join('')}</div>`:''}
         </div>`;
       });
     }
 
-    // RNU section
-    html += `<div class="live-section-title" style="margin-top:1rem">RNU en cours <span class="live-section-count">${currentRnus.length}</span></div>`;
-    if (currentRnus.length === 0) {
-      html += `<div class="live-empty">Aucun RNU en ce moment</div>`;
+    // RNU
+    html += `<div class="live-section-title" style="margin-top:1rem">RNU en cours <span class="live-section-count">${activeRnus.length}</span></div>`;
+    if (!activeRnus.length) {
+      html += `<div class="live-empty glass">Aucun RNU en ce moment</div>`;
     } else {
-      const passDate = lastPassation ? new Date(lastPassation.Date) : null;
-      const passDateStr = passDate && !isNaN(passDate) ? passDate.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-      currentRnus.forEach(r => {
-        html += `<div class="rnu-card">
-          <div class="rnu-card-nom">${r.Nom||'—'}</div>
-          <div class="rnu-card-meta">Dernière passation · ${passDateStr}</div>
-        </div>`;
+      activeRnus.forEach(r => {
+        const d = new Date(r.date);
+        const ds = isNaN(d)?'':d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+        html += `<div class="rnu-card"><div class="rnu-card-nom">${r.nom}</div><div class="rnu-card-meta">${ds} · ${r.par}</div></div>`;
       });
     }
 
