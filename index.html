@@ -1457,6 +1457,78 @@ async function injectDemoData() {
   p = addPass(3,11,16,'16h-00h','Alice',true,true,true,'','Samedi après-midi tranquille.');
   p = addPass(3,12,10,'10h-18h','Martin',true,true,true,'','Fin de semaine propre. Bilan : BX-047 à remplacer.');
 
+  // ══════════════════════════════════════════════
+  // PASSATIONS RÉCENTES — pour alimenter le Live
+  // ══════════════════════════════════════════════
+
+  // Utilise la date réelle d'aujourd'hui
+  const today = new Date();
+  const mkToday = (daysAgo, h, min=0) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - daysAgo);
+    d.setHours(h, min, 0, 0);
+    return d.toISOString();
+  };
+  const addPassToday = (daysAgo, h, cr, auteur, vp, reports, trips, tripsDetail, msg) => {
+    const id = uid();
+    passations.push({ id, date: mkToday(daysAgo, h), creneau:cr, ville:'Bordeaux', astreinte:getAstr(2,23), creePar:auteur, vp:vp?'oui':'non', vpComment:'', reports:reports?'oui':'non', reportsComment:'', tripsOk:trips?'Oui':'Non', tripsDetail:tripsDetail||'', message:msg });
+    return id;
+  };
+  const addScToday = (pid, nom, loc, locuser, bat, depuis, action) =>
+    scooters.push({ id:uid(), idPassation:pid, nom, loc2hire:loc, locuser:locuser||'', batterie:String(bat), depuis, action, urgence:'' });
+  const addRnuToday = (pid, nom) =>
+    rnus.push({ id:uid(), idPassation:pid, nom });
+
+  // — IL Y A 4 JOURS : BX-503 tombe offline, personne ne le récupère
+  p = addPassToday(4, 14, '14h-22h', 'Thierry', true, true, true, '', 'BX-503 offline depuis 16h, batterie à 12%.');
+  addScToday(p,'BX-503','Rue Fondaudège','',12,'1h-3h',"A garder a l'oeil");
+  p = addPassToday(4, 22, '22h-6h', 'Philippine', true, true, true, '', 'BX-503 toujours là, batterie critique.');
+  addScToday(p,'BX-503','Rue Fondaudège','',4,'3h-6h',"Ramener a l'atelier");
+
+  // — IL Y A 3 JOURS : BX-503 toujours pas récupéré + BX-211 RNU sans explication
+  p = addPassToday(3, 6, '6h-14h', 'Romain', true, true, true, '', 'BX-503 toujours là depuis hier, scandale. BX-211 en RNU, raison inconnue.');
+  addScToday(p,'BX-503','Rue Fondaudège','',2,'+6h',"Ramener a l'atelier");
+  addRnuToday(p,'BX-211');
+  p = addPassToday(3, 14, '14h-22h', 'Alice', true, false, true, '', 'Reports pas à jour. BX-503 impossible à récupérer ce shift. BX-211 toujours en RNU, personne sait pourquoi.');
+  addScToday(p,'BX-503','Rue Fondaudège','',1,'+6h',"Ramener a l'atelier");
+  addRnuToday(p,'BX-211');
+  p = addPassToday(3, 22, '22h-6h', 'Martin', true, true, true, '', 'BX-503 toujours là. 3ème jour. BX-211 en RNU, Thierry dit que c\'est normal mais pas de ticket créé.');
+  addScToday(p,'BX-503','Rue Fondaudège','',1,'+6h',"Ramener a l'atelier");
+  addRnuToday(p,'BX-211');
+
+  // — IL Y A 2 JOURS : BX-503 toujours + BX-088 nouveau offline
+  p = addPassToday(2, 6, '6h-14h', 'Thierry', true, true, true, '', 'BX-503 jour 4. BX-088 offline ce matin.');
+  addScToday(p,'BX-503','Rue Fondaudège','',1,'+6h',"Ramener a l'atelier");
+  addScToday(p,'BX-088','Cours d\'Alsace-Lorraine','',33,'-1h',"A garder a l'oeil");
+  addRnuToday(p,'BX-211');
+  p = addPassToday(2, 14, '14h-22h', 'Philippine', true, true, true, '', 'BX-088 résolu. BX-503 toujours bloqué.');
+  addScToday(p,'BX-503','Rue Fondaudège','',1,'+6h',"Ramener a l'atelier");
+  addRnuToday(p,'BX-211');
+  p = addPassToday(2, 22, '22h-6h', 'Melvil', true, true, true, '', 'Nuit calme sauf BX-503 qui reste là.');
+  addScToday(p,'BX-503','Rue Fondaudège','',1,'+6h',"Ramener a l'atelier");
+  addRnuToday(p,'BX-211');
+
+  // — HIER : BX-503 toujours + BX-334 nouveau offline récent
+  p = addPassToday(1, 6, '6h-14h', 'Jerome', true, true, true, '', 'BX-503 jour 5. Impossible d\'accéder à l\'adresse, voiture garée devant. BX-334 offline depuis 9h.');
+  addScToday(p,'BX-503','Rue Fondaudège','Propriétaire de voiture injoignable',1,'+6h',"Deja pris en charge");
+  addScToday(p,'BX-334','Victoire','',28,'-1h',"A garder a l'oeil");
+  addRnuToday(p,'BX-211');
+  p = addPassToday(1, 14, '14h-22h', 'Romain', true, true, true, '', 'BX-334 résolu. BX-503 bloqué par voiture toujours. Police contactée.');
+  addScToday(p,'BX-503','Rue Fondaudège','Propriétaire de voiture injoignable',1,'+6h',"Deja pris en charge");
+  addRnuToday(p,'BX-211');
+  p = addPassToday(1, 22, '22h-6h', 'Alice', true, true, true, '', 'BX-503 : police a verbalisé mais voiture toujours là. BX-412 offline en fin de nuit.');
+  addScToday(p,'BX-503','Rue Fondaudège','',1,'+6h',"Deja pris en charge");
+  addScToday(p,'BX-412','Gare Saint-Jean','',31,'-1h',"A garder a l'oeil");
+  addRnuToday(p,'BX-211');
+
+  // — AUJOURD'HUI : passation du matin avec état actuel
+  const hNow = today.getHours();
+  const crNow = hNow < 14 ? '6h-14h' : hNow < 22 ? '14h-22h' : '22h-6h';
+  p = addPassToday(0, Math.max(6, hNow - 2), crNow, 'Martin', true, true, true, '', 'BX-503 toujours bloqué jour 6. Dépanneuse commandée pour demain. BX-412 toujours là aussi. BX-211 en RNU sans explication depuis 5 jours.');
+  addScToday(p,'BX-503','Rue Fondaudège','Dépanneuse commandée pour demain',1,'+6h',"Deja pris en charge");
+  addScToday(p,'BX-412','Gare Saint-Jean','',18,'3h-6h','Contacter le dernier utilisateur');
+  addRnuToday(p,'BX-211');
+
   try {
     await fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({ action:'seedData', passations, scooters, rnus }), mode:'no-cors' });
     showToast(`Injecté : ${passations.length} passations, ${scooters.length} offlines, ${rnus.length} RNU !`, 'success');
