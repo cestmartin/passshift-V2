@@ -1217,93 +1217,236 @@ async function exportRapport() {
 // ─── DEMO DATA INJECTION ───
 async function injectDemoData() {
   const btn = document.getElementById('seed-btn');
-  if (!confirm('Injecter une semaine de données de démonstration dans le Google Sheet ? (semaine du 23 au 29 mars 2026)')) return;
+  if (!confirm('Injecter 6 semaines de données de démonstration ? (1er mars → 12 avril 2026)')) return;
   btn.disabled = true; btn.textContent = 'Injection...';
 
   const uid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r=Math.random()*16|0; return (c=='x'?r:(r&0x3|0x8)).toString(16); });
+  const passations = [], scooters = [], rnus = [];
 
-  const passations = [];
-  const scooters = [];
-  const rnus = [];
+  // month is 0-indexed: 2 = mars, 3 = avril
+  const mkD = (mo, day, h, min=0) => new Date(2026, mo, day, h, min, 0).toISOString();
 
-  const mkDate = (day, hour, min=0) => {
-    const d = new Date(2026, 2, day, hour, min, 0);
-    return d.toISOString();
+  const ASTREINTES = {
+    '03-02': 'Jerome (06 21 94 86 56)', '03-09': 'Romain (07 50 29 25 71)',
+    '03-16': 'Antoine (06 49 95 11 67)', '03-23': 'Martin (06 51 57 88 73)',
+    '03-30': 'Thierry (06 51 67 06 76)', '04-06': 'Jerome (06 21 94 86 56)'
+  };
+  const getAstr = (mo, day) => {
+    if (mo===2 && day<9) return ASTREINTES['03-02'];
+    if (mo===2 && day<16) return ASTREINTES['03-09'];
+    if (mo===2 && day<23) return ASTREINTES['03-16'];
+    if (mo===2 && day<30) return ASTREINTES['03-23'];
+    if (mo===2 || (mo===3 && day<6)) return ASTREINTES['03-30'];
+    return ASTREINTES['04-06'];
   };
 
-  const addPass = (day, h, creneau, auteur, vp, reports, trips, tripsDetail, msg) => {
+  const addPass = (mo, day, h, cr, auteur, vp, reports, trips, tripsDetail, msg) => {
     const id = uid();
-    passations.push({ id, date: mkDate(day, h), creneau, ville: 'Bordeaux', astreinte: 'Jerome (0621948656)', creePar: auteur, vp: vp?'oui':'non', vpComment: '', reports: reports?'oui':'non', reportsComment: '', tripsOk: trips?'Oui':'Non', tripsDetail: tripsDetail||'', message: msg });
+    passations.push({ id, date: mkD(mo,day,h), creneau:cr, ville:'Bordeaux', astreinte:getAstr(mo,day), creePar:auteur, vp:vp?'oui':'non', vpComment:'', reports:reports?'oui':'non', reportsComment:'', tripsOk:trips?'Oui':'Non', tripsDetail:tripsDetail||'', message:msg });
     return id;
   };
+  const addSc = (pid, nom, loc, locuser, bat, depuis, action) =>
+    scooters.push({ id:uid(), idPassation:pid, nom, loc2hire:loc, locuser:locuser||'', batterie:String(bat), depuis, action, urgence:'' });
+  const addRnu = (pid, nom) =>
+    rnus.push({ id:uid(), idPassation:pid, nom });
 
-  const addSc = (pid, nom, loc, locuser, bat, depuis, action) => {
-    scooters.push({ id: uid(), idPassation: pid, nom, loc2hire: loc, locuser: locuser||'', batterie: String(bat), depuis, action, urgence: '' });
-  };
+  let p;
 
-  const addRnu = (pid, nom) => {
-    rnus.push({ id: uid(), idPassation: pid, nom });
-  };
+  // ══════════════════════════════════════════════
+  // SEMAINE 1 : 2-8 mars — Semaine calme, 1 incident mineur
+  // ══════════════════════════════════════════════
+  p = addPass(2,2,6,'6h-14h','Romain',true,true,true,'','Démarrage de semaine propre. Flotte au top.');
+  p = addPass(2,2,14,'14h-22h','Alice',true,true,true,'','RAS. Belle journée.');
+  p = addPass(2,2,22,'22h-6h','Thierry',true,true,true,'','Nuit calme.');
+  p = addPass(2,3,6,'6h-14h','Martin',true,true,true,'','RAS.');
+  p = addPass(2,3,14,'14h-22h','Philippine',true,true,true,'','BX-019 offline depuis 17h.');
+  addSc(p,'BX-019','Quai des Chartrons','',41,'1h-3h',"A garder a l'oeil");
+  p = addPass(2,3,22,'22h-6h','Jerome',true,true,true,'','BX-019 toujours là.');
+  addSc(p,'BX-019','Quai des Chartrons','',28,'3h-6h','Contacter le dernier utilisateur');
+  p = addPass(2,4,6,'6h-14h','Romain',true,true,true,'','BX-019 récupéré tôt ce matin. Flotte ok.');
+  p = addPass(2,4,14,'14h-22h','Alice',true,true,true,'','RAS.');
+  p = addPass(2,4,22,'22h-6h','Melvil',true,true,true,'','Tranquille.');
+  p = addPass(2,5,6,'6h-14h','Martin',true,true,false,'Trip long BX-091 45min, user en vacances selon lui','Un trip long mais sans danger.');
+  p = addPass(2,5,14,'14h-22h','Thierry',true,true,true,'','Vendredi calme.');
+  p = addPass(2,5,22,'22h-6h','Philippine',true,true,true,'','RAS.');
+  p = addPass(2,6,6,'6h-14h','Jerome',true,true,true,'','Samedi matin propre.');
+  p = addPass(2,6,14,'14h-22h','Romain',true,true,true,'','RAS.');
+  p = addPass(2,6,22,'22h-6h','Alice',true,true,true,'','Nuit ok.');
+  p = addPass(2,7,6,'6h-14h','Martin',false,true,true,'','VP pas à jour ce matin, je règle ça.');
+  p = addPass(2,7,14,'14h-22h','Melvil',true,true,true,'','Bonne semaine !');
+  p = addPass(2,7,22,'22h-6h','Thierry',true,true,true,'','RAS.');
+  p = addPass(2,8,14,'14h-22h','Philippine',true,true,true,'','Dimanche tranquille.');
 
-  // LUNDI 23
-  let p = addPass(23, 6, '6h-14h', 'Romain', true, true, true, '', 'Démarrage de semaine nickel, flotte propre.');
-  p = addPass(23, 14, '14h-22h', 'Alice', true, true, true, '', 'BX-047 offline depuis 14h30, batterie faible.');
-  addSc(p, 'BX-047', 'Cours de la Marne', '', 22, '1h-3h', "A garder a l'oeil");
-  p = addPass(23, 22, '22h-6h', 'Thierry', true, true, true, '', 'BX-047 toujours là, batterie critique. Demande check terrain dès demain matin.');
-  addSc(p, 'BX-047', 'Cours de la Marne', '', 8, '3h-6h', 'A aller check sur place');
+  // ══════════════════════════════════════════════
+  // SEMAINE 2 : 9-15 mars — Semaine chargée, BX-047 récurrent
+  // ══════════════════════════════════════════════
+  p = addPass(2,9,6,'6h-14h','Romain',true,true,true,'','Lundi chargé dès le matin.');
+  p = addPass(2,9,14,'14h-22h','Alice',true,true,true,'','BX-047 et BX-112 offline simultanément.');
+  addSc(p,'BX-047','Cours de la Marne','',22,'1h-3h',"A garder a l'oeil");
+  addSc(p,'BX-112','Place Gambetta','',55,'-1h',"A garder a l'oeil");
+  p = addPass(2,9,22,'22h-6h','Martin',true,true,true,'','BX-047 toujours là, BX-112 résolu.');
+  addSc(p,'BX-047','Cours de la Marne','',10,'3h-6h','A aller check sur place');
+  p = addPass(2,10,6,'6h-14h','Thierry',true,false,true,'','BX-047 critique. Reports pas à jour.');
+  addSc(p,'BX-047','Cours de la Marne','',4,'+6h',"Ramener a l'atelier");
+  addRnu(p,'BX-156');
+  p = addPass(2,10,14,'14h-22h','Philippine',true,true,true,'','BX-047 ramené ! BX-156 toujours en RNU.');
+  addRnu(p,'BX-156');
+  p = addPass(2,10,22,'22h-6h','Jerome',true,true,true,'','BX-156 réparé. Flotte ok.');
+  p = addPass(2,11,6,'6h-14h','Romain',true,true,true,'','RAS ce matin.');
+  p = addPass(2,11,14,'14h-22h','Alice',true,true,false,'Trip long BX-044 55min, utilisateur injoignable','Trip préoccupant. BX-033 offline aussi.');
+  addSc(p,'BX-033','Rue Judaïque','',33,'1h-3h','Contacter le dernier utilisateur');
+  p = addPass(2,11,22,'22h-6h','Melvil',true,true,true,'','BX-033 résolu.');
+  p = addPass(2,12,6,'6h-14h','Martin',true,true,true,'','Flotte propre.');
+  p = addPass(2,12,14,'14h-22h','Thierry',true,true,true,'','BX-047 ENCORE offline.');
+  addSc(p,'BX-047','Médiathèque Mériadeck','',29,'1h-3h',"A garder a l'oeil");
+  p = addPass(2,12,22,'22h-6h','Philippine',true,true,true,'','BX-047 récurrent, à signaler au responsable.');
+  addSc(p,'BX-047','Médiathèque Mériadeck','',15,'3h-6h','A aller check sur place');
+  p = addPass(2,13,6,'6h-14h','Jerome',true,true,true,'','BX-047 ramené. 3ème incident en 2 semaines.');
+  p = addPass(2,13,14,'14h-22h','Romain',true,true,true,'','Vendredi ok.');
+  p = addPass(2,13,22,'22h-6h','Alice',true,true,true,'','RAS.');
+  p = addPass(2,14,8,'8h-16h','Martin',true,true,true,'','Samedi matin propre.');
+  p = addPass(2,14,16,'16h-00h','Melvil',true,true,true,'','RAS.');
+  p = addPass(2,15,10,'10h-18h','Thierry',true,true,true,'','Dimanche calme.');
 
-  // MARDI 24
-  p = addPass(24, 6, '6h-14h', 'Martin', true, false, true, '', 'BX-047 à ramener d\'urgence. Reports pas à jour.');
-  addSc(p, 'BX-047', 'Cours de la Marne', '', 3, '+6h', "Ramener a l'atelier");
-  addRnu(p, 'BX-112');
-  p = addPass(24, 14, '14h-22h', 'Jerome', true, true, false, 'Trip long BX-089 (35min), utilisateur contacté', 'BX-047 récupéré ! BX-112 toujours en RNU, problème de frein.');
-  addRnu(p, 'BX-112');
-  p = addPass(24, 22, '22h-6h', 'Philippine', true, true, true, '', 'Nouveau offline BX-203, vient juste de tomber.');
-  addSc(p, 'BX-203', 'Place de la Victoire', '', 31, '-1h', "A garder a l'oeil");
+  // ══════════════════════════════════════════════
+  // SEMAINE 3 : 16-22 mars — Semaine moyenne, RNU multiples
+  // ══════════════════════════════════════════════
+  p = addPass(2,16,6,'6h-14h','Philippine',true,true,true,'','Lundi serein.');
+  p = addPass(2,16,14,'14h-22h','Jerome',true,true,true,'','BX-201 offline, chute probable.');
+  addSc(p,'BX-201','Cours Victor Hugo','Utilisateur dit avoir garé normalement',52,'1h-3h','Contacter le dernier utilisateur');
+  p = addPass(2,16,22,'22h-6h','Romain',true,true,true,'','BX-201 résolu, user avait mal garé.');
+  p = addPass(2,17,6,'6h-14h','Alice',false,false,true,'','VP et Reports en retard. Journée compliquée.');
+  addRnu(p,'BX-078');
+  addRnu(p,'BX-091');
+  p = addPass(2,17,14,'14h-22h','Martin',true,true,true,'','VP et reports rattrapés. BX-078 et BX-091 toujours en RNU.');
+  addRnu(p,'BX-078');
+  addRnu(p,'BX-091');
+  p = addPass(2,17,22,'22h-6h','Thierry',true,true,true,'','BX-091 réparé. BX-078 toujours en atelier.');
+  addRnu(p,'BX-078');
+  p = addPass(2,18,6,'6h-14h','Melvil',true,true,true,'','BX-078 sorti de l\'atelier ce matin.');
+  p = addPass(2,18,14,'14h-22h','Philippine',true,true,true,'','BX-302 et BX-445 offline en même temps !');
+  addSc(p,'BX-302','Place de la Bourse','',18,'1h-3h','A aller check sur place');
+  addSc(p,'BX-445','Chartrons','',41,'-1h',"A garder a l'oeil");
+  p = addPass(2,18,22,'22h-6h','Jerome',true,true,true,'','BX-445 résolu. BX-302 toujours là.');
+  addSc(p,'BX-302','Place de la Bourse','',8,'3h-6h',"Ramener a l'atelier");
+  p = addPass(2,19,6,'6h-14h','Romain',true,true,true,'','BX-302 ramené. Journée calme.');
+  p = addPass(2,19,14,'14h-22h','Alice',true,true,true,'','RAS.');
+  p = addPass(2,19,22,'22h-6h','Martin',true,true,false,'Trip long BX-089 38min, conducteur professionnel selon lui','Trip long mais situation claire.');
+  p = addPass(2,20,8,'8h-16h','Thierry',true,true,true,'','Vendredi propre.');
+  p = addPass(2,20,16,'16h-00h','Melvil',true,true,true,'','RAS.');
+  p = addPass(2,21,9,'9h-17h','Philippine',true,true,true,'','Samedi ok.');
+  p = addPass(2,22,10,'10h-18h','Jerome',true,true,true,'','Dimanche tranquille.');
 
-  // MERCREDI 25
-  p = addPass(25, 6, '6h-14h', 'Romain', true, true, true, '', 'BX-203 résolu dans la nuit, flotte OK ce matin.');
-  p = addPass(25, 14, '14h-22h', 'Melvil', false, true, true, '', 'VP pas à jour. BX-078 peut-être chute, dernier user contacté.');
-  addSc(p, 'BX-078', 'Rue Sainte-Catherine', '', 45, '1h-3h', 'Contacter le dernier utilisateur');
-  p = addPass(25, 22, '22h-6h', 'Alice', true, true, true, '', 'BX-078 toujours là.');
-  addSc(p, 'BX-078', 'Rue Sainte-Catherine', '', 28, '3h-6h', 'A aller check sur place');
+  // ══════════════════════════════════════════════
+  // SEMAINE 4 : 23-29 mars — Semaine originale enrichie
+  // ══════════════════════════════════════════════
+  p = addPass(2,23,6,'6h-14h','Romain',true,true,true,'','Démarrage de semaine nickel, flotte propre.');
+  p = addPass(2,23,14,'14h-22h','Alice',true,true,true,'','BX-047 offline depuis 14h30, batterie faible.');
+  addSc(p,'BX-047','Cours de la Marne','',22,'1h-3h',"A garder a l'oeil");
+  p = addPass(2,23,22,'22h-6h','Thierry',true,true,true,'','BX-047 toujours là, batterie critique.');
+  addSc(p,'BX-047','Cours de la Marne','',8,'3h-6h','A aller check sur place');
+  p = addPass(2,24,6,'6h-14h','Martin',true,false,true,'','BX-047 à ramener. Reports pas à jour.');
+  addSc(p,'BX-047','Cours de la Marne','',3,'+6h',"Ramener a l'atelier");
+  addRnu(p,'BX-112');
+  p = addPass(2,24,14,'14h-22h','Jerome',true,true,false,'Trip long BX-089 35min, utilisateur contacté','BX-047 récupéré ! BX-112 toujours en RNU.');
+  addRnu(p,'BX-112');
+  p = addPass(2,24,22,'22h-6h','Philippine',true,true,true,'','BX-203 nouveau offline.');
+  addSc(p,'BX-203','Place de la Victoire','',31,'-1h',"A garder a l'oeil");
+  p = addPass(2,25,6,'6h-14h','Romain',true,true,true,'','BX-203 résolu dans la nuit.');
+  p = addPass(2,25,14,'14h-22h','Melvil',false,true,true,'','VP pas à jour. BX-078 offline.');
+  addSc(p,'BX-078','Rue Sainte-Catherine','',45,'1h-3h','Contacter le dernier utilisateur');
+  p = addPass(2,25,22,'22h-6h','Alice',true,true,true,'','BX-078 toujours là.');
+  addSc(p,'BX-078','Rue Sainte-Catherine','',28,'3h-6h','A aller check sur place');
+  p = addPass(2,26,6,'6h-14h','Martin',true,true,true,'','Grosse matinée. BX-078 critique, BX-301 nouveau.');
+  addSc(p,'BX-078','Rue Sainte-Catherine','',12,'+6h',"Ramener a l'atelier");
+  addSc(p,'BX-301','Quai de Paludate','',19,'-1h',"A garder a l'oeil");
+  addRnu(p,'BX-156');
+  p = addPass(2,26,14,'14h-22h','Thierry',true,true,true,'','BX-078 ramené ! BX-301 encore là.');
+  addSc(p,'BX-301','Quai de Paludate','',14,'1h-3h','Contacter le dernier utilisateur');
+  addRnu(p,'BX-156');
+  p = addPass(2,26,22,'22h-6h','Jerome',true,true,true,'','BX-301 récupéré. BX-156 réparé.');
+  p = addPass(2,27,6,'6h-14h','Romain',true,true,true,'','Top, rien à signaler.');
+  p = addPass(2,27,14,'14h-22h','Philippine',true,false,false,'Trip long BX-089 35min, user injoignable','Reports pas à jour. BX-047 encore offline.');
+  addSc(p,'BX-047','Médiathèque Mériadeck','',27,'1h-3h',"A garder a l'oeil");
+  p = addPass(2,27,22,'22h-6h','Martin',true,true,true,'','BX-047 récurrent, à surveiller.');
+  addSc(p,'BX-047','Médiathèque Mériadeck','',11,'3h-6h','A aller check sur place');
+  p = addPass(2,28,6,'6h-14h','Alice',true,true,true,'','BX-047 à sortir du circuit, 3ème incident.');
+  addSc(p,'BX-047','Médiathèque Mériadeck','',5,'+6h',"Ramener a l'atelier");
+  p = addPass(2,28,14,'14h-22h','Melvil',true,true,true,'','BX-047 récupéré. Flotte nickel.');
+  p = addPass(2,28,22,'22h-6h','Thierry',true,true,true,'','Nuit tranquille.');
+  p = addPass(2,29,6,'6h-14h','Jerome',true,true,true,'','RAS.');
+  p = addPass(2,29,14,'14h-22h','Romain',true,true,true,'','BX-412 offline en fin de shift.');
+  addSc(p,'BX-412','Gare Saint-Jean','',38,'-1h',"A garder a l'oeil");
+  p = addPass(2,29,22,'22h-6h','Philippine',true,true,true,'','BX-412 toujours là.');
+  addSc(p,'BX-412','Gare Saint-Jean','',22,'1h-3h','Contacter le dernier utilisateur');
 
-  // JEUDI 26
-  p = addPass(26, 6, '6h-14h', 'Martin', true, true, true, '', 'Grosse matinée. BX-078 à récupérer, BX-301 nouveau offline, BX-156 en RNU (problème GPS).');
-  addSc(p, 'BX-078', 'Rue Sainte-Catherine', '', 12, '+6h', "Ramener a l'atelier");
-  addSc(p, 'BX-301', 'Quai de Paludate', '', 19, '-1h', "A garder a l'oeil");
-  addRnu(p, 'BX-156');
-  p = addPass(26, 14, '14h-22h', 'Thierry', true, true, true, '', 'BX-078 ramené ! BX-301 encore là, batterie qui baisse.');
-  addSc(p, 'BX-301', 'Quai de Paludate', '', 14, '1h-3h', 'Contacter le dernier utilisateur');
-  addRnu(p, 'BX-156');
-  p = addPass(26, 22, '22h-6h', 'Jerome', true, true, true, '', 'BX-301 récupéré. BX-156 réparé. Flotte propre pour la nuit.');
+  // ══════════════════════════════════════════════
+  // SEMAINE 5 : 30 mars - 5 avril — Semaine très chargée, panne série
+  // ══════════════════════════════════════════════
+  p = addPass(2,30,6,'6h-14h','Martin',true,true,true,'','BX-412 récupéré tôt. Mais BX-501 déjà offline.');
+  addSc(p,'BX-501','Bordeaux-Lac','',15,'1h-3h',"A garder a l'oeil");
+  p = addPass(2,30,14,'14h-22h','Alice',true,false,true,'','Reports toujours pas à jour. BX-501 toujours là + BX-502 tombe aussi.');
+  addSc(p,'BX-501','Bordeaux-Lac','',8,'3h-6h','A aller check sur place');
+  addSc(p,'BX-502','Quai de Bacalan','',62,'-1h',"A garder a l'oeil");
+  p = addPass(2,30,22,'22h-6h','Thierry',true,true,true,'','BX-502 résolu. BX-501 critique.');
+  addSc(p,'BX-501','Bordeaux-Lac','',3,'+6h',"Ramener a l'atelier");
+  p = addPass(2,31,6,'6h-14h','Philippine',true,true,true,'','BX-501 ramené. Mais BX-047 ENCORE offline.');
+  addSc(p,'BX-047','Cours Victor Hugo','',19,'-1h',"A garder a l'oeil");
+  addRnu(p,'BX-301');
+  p = addPass(2,31,14,'14h-22h','Jerome',true,true,false,'Trip long BX-099 42min + BX-044 31min, doubles trips ce soir','Deux trips longs. BX-047 et BX-503 offline.');
+  addSc(p,'BX-047','Cours Victor Hugo','',11,'1h-3h','Contacter le dernier utilisateur');
+  addSc(p,'BX-503','Trinité','',44,'-1h',"A garder a l'oeil");
+  addRnu(p,'BX-301');
+  p = addPass(2,31,22,'22h-6h','Romain',true,true,true,'','BX-503 résolu. BX-047 toujours là.');
+  addSc(p,'BX-047','Cours Victor Hugo','',6,'3h-6h',"Ramener a l'atelier");
+  addRnu(p,'BX-301');
+  p = addPass(3,1,6,'6h-14h','Alice',true,true,true,'','BX-047 ramené. BX-301 toujours en RNU, pièce commandée.');
+  addRnu(p,'BX-301');
+  p = addPass(3,1,14,'14h-22h','Martin',false,false,true,'','VP et reports en retard. Grosse journée. BX-601 offline.');
+  addSc(p,'BX-601','Caudéran','',27,'1h-3h','Contacter le dernier utilisateur');
+  addRnu(p,'BX-301');
+  p = addPass(3,1,22,'22h-6h','Thierry',true,true,true,'','BX-601 résolu. VP et reports rattrapés.');
+  p = addPass(3,2,6,'6h-14h','Philippine',true,true,true,'','Mercredi propre enfin.');
+  p = addPass(3,2,14,'14h-22h','Jerome',true,true,true,'','BX-702 offline, batterie à 5%.');
+  addSc(p,'BX-702','Rue du Palais Gallien','',5,'1h-3h',"Ramener a l'atelier");
+  p = addPass(3,2,22,'22h-6h','Romain',true,true,true,'','BX-702 ramené.');
+  p = addPass(3,3,8,'8h-16h','Alice',true,true,true,'','Jeudi calme.');
+  p = addPass(3,3,16,'16h-00h','Martin',true,true,true,'','RAS.');
+  p = addPass(3,4,9,'9h-17h','Melvil',true,true,true,'','Vendredi ok.');
+  p = addPass(3,4,17,'17h-01h','Thierry',true,true,true,'','RAS.');
+  p = addPass(3,5,8,'8h-20h','Philippine',true,true,true,'','Samedi long mais calme.');
 
-  // VENDREDI 27
-  p = addPass(27, 6, '6h-14h', 'Romain', true, true, true, '', 'Top, rien à signaler.');
-  p = addPass(27, 14, '14h-22h', 'Philippine', true, false, false, 'Trip long BX-089 (35min), utilisateur unreachable', 'VP et reports pas à jour. BX-047 encore offline !');
-  addSc(p, 'BX-047', 'Médiathèque Mériadeck', '', 27, '1h-3h', "A garder a l'oeil / Contacter le dernier utilisateur");
-  p = addPass(27, 22, '22h-6h', 'Martin', true, true, true, '', 'BX-047 récurrent cette semaine, à surveiller.');
-  addSc(p, 'BX-047', 'Médiathèque Mériadeck', '', 11, '3h-6h', 'A aller check sur place');
-
-  // SAMEDI 28
-  p = addPass(28, 6, '6h-14h', 'Alice', true, true, true, '', 'BX-047 à sortir du circuit, 3ème incident cette semaine.');
-  addSc(p, 'BX-047', 'Médiathèque Mériadeck', '', 5, '+6h', "Ramener a l'atelier");
-  p = addPass(28, 14, '14h-22h', 'Melvil', true, true, true, '', 'BX-047 récupéré ce matin. Flotte nickel cet aprem.');
-  p = addPass(28, 22, '22h-6h', 'Thierry', true, true, true, '', 'Nuit tranquille. Bonne semaine à tous.');
-
-  // DIMANCHE 29
-  p = addPass(29, 6, '6h-14h', 'Jerome', true, true, true, '', 'RAS.');
-  p = addPass(29, 14, '14h-22h', 'Romain', true, true, true, '', 'Nouveau offline en fin de shift, à suivre ce soir.');
-  addSc(p, 'BX-412', 'Gare Saint-Jean', '', 38, '-1h', "A garder a l'oeil");
-  p = addPass(29, 22, '22h-6h', 'Philippine', true, true, true, '', 'BX-412 toujours là, dernier user contacté.');
-  addSc(p, 'BX-412', 'Gare Saint-Jean', '', 22, '1h-3h', 'Contacter le dernier utilisateur');
+  // ══════════════════════════════════════════════
+  // SEMAINE 6 : 6-12 avril — Semaine post-chargée, récup
+  // ══════════════════════════════════════════════
+  p = addPass(3,6,6,'6h-14h','Jerome',true,true,true,'','Semaine qui commence bien.');
+  p = addPass(3,6,14,'14h-22h','Romain',true,true,true,'','BX-301 finalement réparé ! Flotte complète.');
+  p = addPass(3,6,22,'22h-6h','Alice',true,true,true,'','Nuit calme.');
+  p = addPass(3,7,6,'6h-14h','Martin',true,true,true,'','RAS.');
+  p = addPass(3,7,14,'14h-22h','Thierry',true,true,true,'','BX-019 offline, même endroit que la semaine 1.');
+  addSc(p,'BX-019','Quai des Chartrons','',38,'1h-3h',"A garder a l'oeil");
+  p = addPass(3,7,22,'22h-6h','Philippine',true,true,true,'','BX-019 toujours là.');
+  addSc(p,'BX-019','Quai des Chartrons','',21,'3h-6h','A aller check sur place');
+  p = addPass(3,8,6,'6h-14h','Melvil',true,true,true,'','BX-019 récupéré. Même spot qu\'il y a 5 semaines, à investiguer.');
+  p = addPass(3,8,14,'14h-22h','Jerome',true,true,true,'','Flotte ok.');
+  p = addPass(3,8,22,'22h-6h','Romain',true,true,false,'Trip long BX-089 encore, 28min cette fois','BX-089 à surveiller pour les trips longs.');
+  p = addPass(3,9,6,'6h-14h','Alice',true,true,true,'','RAS.');
+  p = addPass(3,9,14,'14h-22h','Martin',true,true,true,'','Journée propre.');
+  p = addPass(3,9,22,'22h-6h','Thierry',true,true,true,'','Nuit ok.');
+  p = addPass(3,10,6,'6h-14h','Philippine',true,true,true,'','Vendredi propre !');
+  p = addPass(3,10,14,'14h-22h','Melvil',true,true,true,'','BX-047 de NOUVEAU offline. Sérieusement à sortir du parc.');
+  addSc(p,'BX-047','Place de la Victoire','',14,'1h-3h',"A garder a l'oeil");
+  p = addPass(3,10,22,'22h-6h','Jerome',true,true,true,'','BX-047 encore là. 6ème incident en 6 semaines.');
+  addSc(p,'BX-047','Place de la Victoire','',7,'3h-6h',"Ramener a l'atelier");
+  p = addPass(3,11,8,'8h-16h','Romain',true,true,true,'','BX-047 ramené définitivement. Mis en réforme.');
+  p = addPass(3,11,16,'16h-00h','Alice',true,true,true,'','Samedi après-midi tranquille.');
+  p = addPass(3,12,10,'10h-18h','Martin',true,true,true,'','Fin de semaine propre. Bilan : BX-047 à remplacer.');
 
   try {
-    await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'seedData', passations, scooters, rnus }), mode: 'no-cors' });
-    showToast('Données de démo injectées ! Actualise les onglets.', 'success');
+    await fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({ action:'seedData', passations, scooters, rnus }), mode:'no-cors' });
+    showToast(`Injecté : ${passations.length} passations, ${scooters.length} offlines, ${rnus.length} RNU !`, 'success');
   } catch(e) { showToast('Erreur injection.', 'error'); }
-
-  btn.disabled = false; btn.textContent = 'Injecter démo';
+  btn.disabled = false; btn.textContent = 'Démo';
 }
 
 // ─── QUICK HELPERS ───
