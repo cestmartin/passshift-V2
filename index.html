@@ -222,6 +222,18 @@
     .live-controls { display: flex; gap: 6px; }
     .refresh-btn { padding: 8px 14px; font-size: 12px; font-weight: 500; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; background: rgba(255,255,255,0.06); cursor: pointer; color: rgba(255,255,255,0.5); font-family: var(--font); transition: all 0.15s; display: flex; align-items: center; gap: 5px; }
     .refresh-btn:hover { border-color: rgba(255,85,0,0.4); color: rgba(255,150,80,0.9); }
+
+    /* OFFLINE TYPE */
+    .offline-type-row { display: flex; gap: 7px; margin-bottom: 11px; flex-wrap: wrap; }
+    .ot-btn { flex: 1; min-width: 80px; padding: 10px 8px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); cursor: pointer; font-family: var(--font); font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.5); text-align: center; transition: all 0.18s; line-height: 1.4; }
+    .ot-btn .ot-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+    .ot-btn.sel-bat { background: rgba(255,214,10,0.12); border-color: rgba(255,214,10,0.35); color: #FFD60A; }
+    .ot-btn.sel-offline { background: rgba(255,85,0,0.12); border-color: rgba(255,85,0,0.35); color: #FF7730; }
+    .ot-btn.sel-session { background: rgba(255,69,58,0.15); border-color: rgba(255,69,58,0.45); color: #FF453A; }
+
+    /* ACCIDENT */
+    .accident-item { background: rgba(255,69,58,0.07); border: 1px solid rgba(255,69,58,0.25); border-left: 4px solid #FF453A; border-radius: var(--r); padding: 13px; padding-top: 36px; margin-bottom: 10px; position: relative; }
+    .accident-item .item-label { color: #FF453A; }
     .refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
     @keyframes spin { to{transform:rotate(360deg)} }
 
@@ -395,6 +407,14 @@
         <div id="rnu-list"></div>
         <button class="add-btn" onclick="addRNU()">+ Ajouter un scooter en RNU</button>
       </div>
+      <div class="section glass">
+        <div class="section-header">
+          <div class="section-icon" style="background:rgba(255,69,58,0.15)"><svg viewBox="0 0 24 24" stroke="#FF453A"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+          <div><div class="section-title" style="color:#FF453A">Accident</div><div class="section-sub">Signaler un incident utilisateur</div></div>
+        </div>
+        <div id="accident-list"></div>
+        <button class="add-btn" style="border-color:rgba(255,69,58,0.3);color:rgba(255,100,90,0.9)" onclick="addAccident()">+ Signaler un accident</button>
+      </div>
       <div class="nav-btns">
         <button class="btn-prev" onclick="prevStep(2)">← Retour</button>
         <button class="btn-next" onclick="nextStep(2)">Continuer →</button>
@@ -544,7 +564,7 @@
   </div>
 </div>
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXV7nsybkET2Icf_z4cbGRhxNh_jhiAY5rGbm1-8cY13wOgfGioS9QgS-2DcfaJKiMQQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlcWtADRCLT1vFPVg8ptSitU5uco-NSW94KLtkup1SCznP_uGCPn5XO4QE-fknGY3vhA/exec";
 const ACTIONS = ["A garder a l'oeil", "A aller check sur place", "Contacter le dernier utilisateur", "Ramener a l'atelier", "Deja pris en charge"];
 const DUREE_OPTIONS = ["-1h", "1h-3h", "3h-6h", "+6h"];
 let sCount = 0, rCount = 0, currentStep = 1, rapportWeekOffset = 0;
@@ -674,10 +694,19 @@ async function buildRecap() {
   html += `Astreinte : <strong style="color:#FF5500">${astreinte}</strong><br><br>`;
   if (scooters.length > 0) {
     html += `<strong style="color:rgba(255,255,255,0.9)">${scooters.length} scooter(s) offline</strong><br>`;
-    scooters.forEach(s => { html += `&bull; ${s.nom}${s.actions.length>0?' — '+s.actions.join(', '):''}${s.depuis?' ('+s.depuis+')':''}<br>`; });
+    scooters.forEach(s => {
+      const typeLabel = s.type==='batterie'?'🔋':s.type==='session'?'🚨':s.type==='offline'?'⚡':'';
+      html += `&bull; ${typeLabel} ${s.nom}${s.actions.length>0?' — '+s.actions.join(', '):''}${s.depuis?' ('+s.depuis+')':''}<br>`;
+    });
     html += '<br>';
   } else { html += `<span style="color:#30D158">Aucun scooter offline</span><br><br>`; }
   if (rnus.length > 0) html += `RNU : ${rnus.map(r=>r.nom).join(', ')}<br><br>`;
+  const accidents = collectAccidents();
+  if (accidents.length > 0) {
+    html += `<strong style="color:#FF453A">⚠️ ${accidents.length} accident(s)</strong><br>`;
+    accidents.forEach(a => { html += `&bull; ${a.nom}${a.userid?' · '+a.userid:''}${a.lieu?' · '+a.lieu:''}${a.garage?' · Ramener au garage':''}<br>`; });
+    html += '<br>';
+  }
   html += `VP : <strong style="color:${vp==='oui'?'#30D158':'#FF453A'}">${vp==='oui'?'A jour':'Non a jour'}</strong> &nbsp; Reports : <strong style="color:${rep==='oui'?'#30D158':'#FF453A'}">${rep==='oui'?'A jour':'Non a jour'}</strong> &nbsp; Trips : <strong>${trips}</strong>`;
   document.getElementById('recap-content').innerHTML = html;
 
@@ -733,44 +762,78 @@ async function buildRecap() {
 }
 
 // ─── SCOOTERS ───
-function addScooter() {
+function addScooter(prefill={}) {
   const id = ++sCount;
   const div = document.createElement('div');
   div.className = 'scooter-item'; div.id = 'sc-'+id;
   const actionChecks = ACTIONS.map((a,i) =>
     `<label class="action-check" id="ac-${id}-${i}">
-      <input type="checkbox" id="sc${id}-action-${i}" onchange="toggleActionCheck(${id},${i})"> <span>${a}</span>
+      <input type="checkbox" id="sc${id}-action-${i}" onchange="toggleActionCheck(${id},${i})"${prefill.actions&&prefill.actions.includes(a)?' checked':''}> <span>${a}</span>
     </label>`
   ).join('');
+  const selBat = prefill.type==='batterie' ? 'sel-bat' : '';
+  const selOff = prefill.type==='offline' ? 'sel-offline' : '';
+  const selSes = prefill.type==='session' ? 'sel-session' : '';
   div.innerHTML = `
     <span class="item-label">Scooter ${id}</span>
     <button class="remove-btn" onclick="removeEl('sc-${id}')">×</button>
+    <div class="field" style="margin-bottom:11px">
+      <label>Type d'offline <span class="required-star">*</span></label>
+      <input type="hidden" id="sc${id}-type" value="${prefill.type||''}">
+      <div class="offline-type-row">
+        <button type="button" class="ot-btn ${selBat}" onclick="setOfflineType(${id},'batterie',this)">
+          <span class="ot-icon">🔋</span>Batterie vide
+        </button>
+        <button type="button" class="ot-btn ${selOff}" onclick="setOfflineType(${id},'offline',this)">
+          <span class="ot-icon">⚡</span>Offline (batterie ok)
+        </button>
+        <button type="button" class="ot-btn ${selSes}" onclick="setOfflineType(${id},'session',this)">
+          <span class="ot-icon">🚨</span>Session en cours — urgent
+        </button>
+      </div>
+    </div>
     <div class="row2" style="margin-bottom:10px">
       <div class="field">
         <label>Nom du scoot <span class="required-star">*</span></label>
-        <input type="text" id="sc${id}-nom" placeholder="Ex : BX-123">
+        <input type="text" id="sc${id}-nom" placeholder="Ex : BX-123" value="${prefill.nom||''}">
       </div>
       <div class="field">
         <label>Offline depuis</label>
         <select id="sc${id}-depuis">
           <option value="">-- Choisir --</option>
-          ${DUREE_OPTIONS.map(o=>`<option value="${o}">${o}</option>`).join('')}
+          ${DUREE_OPTIONS.map(o=>`<option value="${o}"${prefill.depuis===o?' selected':''}>${o}</option>`).join('')}
         </select>
       </div>
     </div>
     <div class="row2" style="margin-bottom:10px">
-      <div class="field"><label>Localisation 2hire</label><input type="text" id="sc${id}-loc2hire" placeholder="Ex : Rue Victor Hugo"></div>
-      <div class="field"><label>Localisation utilisateur</label><input type="text" id="sc${id}-locuser" placeholder="Si contacté au tél..."></div>
+      <div class="field"><label>Localisation 2hire</label><input type="text" id="sc${id}-loc2hire" placeholder="Ex : Rue Victor Hugo" value="${prefill.loc2hire||''}"></div>
+      <div class="field"><label>Localisation utilisateur</label><input type="text" id="sc${id}-locuser" placeholder="Si contacté au tél..." value="${prefill.locuser||''}"></div>
     </div>
     <div class="row2" style="margin-bottom:10px">
-      <div class="field"><label>Batterie %</label><input type="number" id="sc${id}-bat" placeholder="15" min="0" max="100"></div>
+      <div class="field"><label>Batterie %</label><input type="number" id="sc${id}-bat" placeholder="15" min="0" max="100" value="${prefill.batterie||''}"></div>
       <div class="field"></div>
     </div>
     <div class="field">
-      <label>Actions a mener</label>
+      <label>Actions à mener</label>
       <div class="action-checks">${actionChecks}</div>
     </div>`;
   document.getElementById('scooters-list').appendChild(div);
+  // re-apply checked state for prefilled actions
+  if (prefill.actions) {
+    ACTIONS.forEach((a,i) => {
+      if (prefill.actions.includes(a)) toggleActionCheck(id, i);
+    });
+  }
+  if (prefill.type) {
+    const btn = div.querySelector(`.ot-btn.${prefill.type==='batterie'?'sel-bat':prefill.type==='offline'?'sel-offline':'sel-session'}`);
+  }
+}
+
+function setOfflineType(scooterId, type, btn) {
+  document.getElementById(`sc${scooterId}-type`).value = type;
+  const row = btn.closest('.offline-type-row');
+  row.querySelectorAll('.ot-btn').forEach(b => b.className = 'ot-btn');
+  btn.classList.add(type==='batterie'?'sel-bat':type==='offline'?'sel-offline':'sel-session');
 }
 
 function toggleActionCheck(scooterId, actionIdx) {
@@ -813,8 +876,60 @@ function collectScooters() {
       locuser: document.getElementById('sc'+id+'-locuser')?.value||'',
       batterie: document.getElementById('sc'+id+'-bat')?.value||'',
       depuis: document.getElementById('sc'+id+'-depuis')?.value||'',
+      type: document.getElementById('sc'+id+'-type')?.value||'',
       actions,
       action: actions.join(' / ')
+    };
+  });
+}
+
+// ─── ACCIDENTS ───
+let aCount = 0;
+function addAccident(prefill={}) {
+  const id = ++aCount;
+  const div = document.createElement('div');
+  div.className = 'accident-item'; div.id = 'acc-'+id;
+  div.innerHTML = `
+    <span class="item-label">Accident ${id}</span>
+    <button class="remove-btn" onclick="removeEl('acc-${id}')">×</button>
+    <div class="row2" style="margin-bottom:10px">
+      <div class="field">
+        <label>Nom du scoot <span class="required-star">*</span></label>
+        <input type="text" id="acc${id}-nom" placeholder="Ex : BX-123" value="${prefill.nom||''}">
+      </div>
+      <div class="field">
+        <label>ID utilisateur</label>
+        <input type="text" id="acc${id}-userid" placeholder="Ex : USR-4521" value="${prefill.userid||''}">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Lieu de l'accident</label>
+      <input type="text" id="acc${id}-lieu" placeholder="Ex : Rue Victor Hugo, Bordeaux" value="${prefill.lieu||''}">
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Description</label>
+      <textarea id="acc${id}-desc" placeholder="Ex : Chute, choc avec véhicule, blessure..." style="min-height:55px">${prefill.desc||''}</textarea>
+    </div>
+    <div class="field">
+      <label>Action</label>
+      <label class="action-check${prefill.garage?' checked':''}" id="acc-ac-${id}" style="margin-bottom:0">
+        <input type="checkbox" id="acc${id}-garage" onchange="this.closest('.action-check').classList.toggle('checked',this.checked)"${prefill.garage?' checked':''}>
+        <div class="action-ring"></div>
+        <span>Ramener au garage</span>
+      </label>
+    </div>`;
+  document.getElementById('accident-list').appendChild(div);
+}
+
+function collectAccidents() {
+  return Array.from(document.querySelectorAll('.accident-item')).map(el => {
+    const id = el.id.replace('acc-','');
+    return {
+      nom: document.getElementById('acc'+id+'-nom')?.value||'',
+      userid: document.getElementById('acc'+id+'-userid')?.value||'',
+      lieu: document.getElementById('acc'+id+'-lieu')?.value||'',
+      desc: document.getElementById('acc'+id+'-desc')?.value||'',
+      garage: document.getElementById('acc'+id+'-garage')?.checked||false
     };
   });
 }
@@ -849,7 +964,7 @@ async function submitPassation() {
     tripsOk:tripsOk?'Oui':'Non',
     tripsDetail:tripsOk?'':document.getElementById('trips-text').value,
     message:document.getElementById('message').value,
-    scooters:collectScooters(), rnu:collectRNU()
+    scooters:collectScooters(), rnu:collectRNU(), accidents:collectAccidents()
   };
   try {
     await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload),mode:'no-cors'});
@@ -869,7 +984,8 @@ function resetForm() {
   document.getElementById('trips-detail').classList.remove('hidden');
   ['vp-val','rep-val'].forEach(id=>document.getElementById(id).value='');
   ['vp-oui','vp-non','rep-oui','rep-non'].forEach(id=>document.getElementById(id).className='status-btn');
-  sCount=0; rCount=0;
+  document.getElementById('accident-list').innerHTML='';
+  aCount=0; sCount=0; rCount=0;
   goToStep(1);
 }
 
@@ -1273,14 +1389,19 @@ async function loadPrevOfflines() {
 
     prevScooters.forEach(s => {
       const safeNom = (s.Nom||'').replace(/'/g,"\\'");
-      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(255,255,255,0.06);border-radius:var(--r);margin-bottom:6px;gap:8px">
+      const safeLoc = (s.Loc2hire||'').replace(/'/g,"\\'");
+      const safeLocU = (s.LocUser||'').replace(/'/g,"\\'");
+      const safeAction = (s.Action||'').replace(/'/g,"\\'");
+      const safeType = (s.Type||'').replace(/'/g,"\\'");
+      const typeLabel = s.Type==='batterie'?'🔋 Batterie vide':s.Type==='session'?'🚨 Session en cours':s.Type==='offline'?'⚡ Offline (batterie ok)':'';
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:14px;margin-bottom:6px;gap:8px">
         <div>
-          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:15px;font-weight:700;color:rgba(255,255,255,0.9)">${s.Nom||'—'}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.35)">${s.Loc2hire||''}</div>
+          <div style="font-size:15px;font-weight:600;color:white">${s.Nom||'—'}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px">${s.Loc2hire||''}${typeLabel?' · '+typeLabel:''}</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
-          <button onclick="addScooterFromPrev('${safeNom}','${(s.Loc2hire||'').replace(/'/g,"\\'")}','${(s.LocUser||'').replace(/'/g,"\\'")}','${s.Batterie||''}','${(s.Action||'').replace(/'/g,"\\'")}',this)" style="padding:6px 12px;background:rgba(255,214,10,0.11);border:1px solid rgba(243,156,18,0.4);border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;color:#854F0B;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif">Toujours offline</button>
-          <button onclick="markResolved(this)" style="padding:6px 12px;background:rgba(48,209,88,0.12);border:1px solid rgba(46,204,113,0.3);border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;color:#30D158;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif">Resolu</button>
+          <button onclick="addScooterFromPrev('${safeNom}','${safeLoc}','${safeLocU}','${s.Batterie||''}','${safeAction}','${safeType}',this)" style="padding:7px 12px;background:rgba(255,214,10,0.12);border:1px solid rgba(255,214,10,0.3);border-radius:11px;font-size:12px;font-weight:500;cursor:pointer;color:#FFD60A;font-family:var(--font)">Encore offline</button>
+          <button onclick="markResolved(this)" style="padding:7px 12px;background:rgba(48,209,88,0.1);border:1px solid rgba(48,209,88,0.25);border-radius:11px;font-size:12px;font-weight:500;cursor:pointer;color:#30D158;font-family:var(--font)">Résolu</button>
         </div>
       </div>`;
     });
@@ -1290,30 +1411,16 @@ async function loadPrevOfflines() {
   } catch(e) { /* silently fail */ }
 }
 
-function addScooterFromPrev(nom, loc2hire, locuser, batterie, action, btn) {
-  addScooter();
-  const id = sCount;
-  if (nom) document.getElementById(`sc${id}-nom`).value = nom;
-  if (loc2hire) document.getElementById(`sc${id}-loc2hire`).value = loc2hire;
-  if (locuser) document.getElementById(`sc${id}-locuser`).value = locuser;
-  if (batterie) document.getElementById(`sc${id}-bat`).value = batterie;
-  // Pre-check matching actions
-  if (action) {
-    ACTIONS.forEach((a, i) => {
-      if (action.includes(a)) {
-        const cb = document.getElementById(`sc${id}-action-${i}`);
-        if (cb) { cb.checked = true; toggleActionCheck(id, i); }
-      }
-    });
-  }
+function addScooterFromPrev(nom, loc2hire, locuser, batterie, action, type, btn) {
+  const actions = action ? ACTIONS.filter(a => action.includes(a)) : [];
+  addScooter({ nom, loc2hire, locuser, batterie, depuis:'', type, actions });
   // Mark this prev scooter row as handled
   const row = btn.closest('div[style*="display:flex"]');
   if (row) {
-    row.style.opacity = '0.4';
+    row.style.opacity = '0.35';
     row.style.pointerEvents = 'none';
-    row.innerHTML += `<span style="font-size:11px;color:#FFD60A;font-weight:600;margin-left:8px">Ajouté</span>`;
   }
-  showToast(`${nom} ajouté au formulaire`, 'success');
+  showToast(`${nom} ajouté`, 'success');
 }
 
 function markResolved(btn) {
