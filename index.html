@@ -571,12 +571,13 @@ let sCount = 0, rCount = 0, currentStep = 1, rapportWeekOffset = 0;
 let _incidents = [], _activeFilter = 'tous';
 
 // ─── PLANNING ───
-const TEAM = { 'Jerome':{tel:'0621948656'}, 'Thierry':{tel:'0651670676'}, 'Romain':{tel:'0750292571'}, 'Antoine':{tel:'0649951167'}, 'Martin':{tel:'0651578873'} };
+const TEAM = { 'Jerome':{tel:'06 21 94 86 56'}, 'Thierry':{tel:'06 51 67 06 76'}, 'Romain':{tel:'07 50 29 25 71'}, 'Antoine':{tel:'06 49 95 11 67'}, 'Martin':{tel:'06 51 57 88 73'} };
 const PLANNING = [
   {d:'2026-01-05',n:'Jerome'},{d:'2026-01-12',n:'Antoine'},{d:'2026-01-19',n:'Martin'},{d:'2026-01-26',n:'Thierry'},
-  {d:'2026-02-02',n:'Jerome'},{d:'2026-02-09',n:'Romain'},{d:'2026-02-16',n:'Antoine'},{d:'2026-02-23',n:'Thierry'},{d:'2026-03-02',n:'Martin'},
-  {d:'2026-03-09',n:'Jerome'},{d:'2026-03-16',n:'Romain'},{d:'2026-03-23',n:'Antoine'},{d:'2026-03-30',n:'Martin'},
-  {d:'2026-04-06',n:'Thierry'},{d:'2026-04-13',n:'Jerome'},{d:'2026-04-20',n:'Romain'},{d:'2026-04-27',n:'Antoine'},{d:'2026-05-04',n:'Martin'}
+  {d:'2026-02-02',n:'Jerome'},{d:'2026-02-09',n:'Romain'},{d:'2026-02-16',n:'Antoine'},{d:'2026-02-23',n:'Thierry'},
+  {d:'2026-03-02',n:'Martin'},{d:'2026-03-09',n:'Jerome'},{d:'2026-03-16',n:'Romain'},{d:'2026-03-23',n:'Antoine'},{d:'2026-03-30',n:'Martin'},
+  {d:'2026-04-06',n:'Thierry'},{d:'2026-04-13',n:'Jerome'},{d:'2026-04-20',n:'Romain'},{d:'2026-04-27',n:'Antoine'},
+  {d:'2026-05-04',n:'Martin'}
 ];
 
 function getAstreinte(date) {
