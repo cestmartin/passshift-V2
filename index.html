@@ -262,6 +262,32 @@
     .live-stat-label { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
     .live-empty { text-align: center; padding: 2rem; color: rgba(255,255,255,0.3); font-size: 14px; border-radius: var(--r2); font-weight: 300; }
 
+    /* TERRAIN */
+    #map { height: 340px; border-radius: var(--r2); overflow: hidden; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.08); z-index: 1; }
+    .leaflet-container { background: #1a1a2e !important; }
+    .terrain-add { border-radius: var(--r2); padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+    .terrain-add-title { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .terrain-add-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .terrain-add-row .field { flex: 1; min-width: 120px; margin-bottom: 0; }
+    .terrain-add-btn { padding: 11px 16px; background: var(--o); border: none; border-radius: 14px; font-size: 13px; font-weight: 600; color: white; cursor: pointer; font-family: var(--font); transition: all 0.18s; white-space: nowrap; align-self: flex-end; }
+    .terrain-add-btn:hover { background: var(--o2); }
+    .terrain-card { border-radius: var(--r2); padding: 1rem 1.25rem; margin-bottom: 8px; border-left: 4px solid; position: relative; }
+    .terrain-card.level-critical { background: rgba(255,69,58,0.07); border-color: var(--d); }
+    .terrain-card.level-warn { background: rgba(255,214,10,0.06); border-color: var(--w); }
+    .terrain-card.level-ok { background: rgba(48,209,88,0.05); border-color: var(--s); }
+    .terrain-card.level-quick { background: rgba(255,85,0,0.07); border-color: var(--o); }
+    .terrain-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+    .terrain-card-nom { font-size: 19px; font-weight: 700; color: white; letter-spacing: -0.3px; }
+    .terrain-card-dur { font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 20px; white-space: nowrap; font-family: var(--mono); }
+    .terrain-card-det { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.7; font-weight: 300; }
+    .terrain-card-det strong { color: rgba(255,255,255,0.75); font-weight: 500; }
+    .terrain-card-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .btn-resolu { padding: 7px 14px; background: rgba(48,209,88,0.12); border: 1px solid rgba(48,209,88,0.28); border-radius: 12px; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--s); font-family: var(--font); transition: all 0.18s; }
+    .btn-resolu:hover { background: rgba(48,209,88,0.22); }
+    .btn-locate { padding: 7px 14px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; font-size: 12px; font-weight: 500; cursor: pointer; color: rgba(255,255,255,0.55); font-family: var(--font); transition: all 0.18s; }
+    .btn-locate:hover { border-color: rgba(255,85,0,0.35); color: rgba(255,150,80,0.9); }
+    .quick-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: var(--od); color: var(--o); border: 1px solid rgba(255,85,0,0.25); margin-left: 6px; vertical-align: middle; }
+
     /* RAPPORT */
     .rapport-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px; }
     .rapport-week { font-size: 14px; font-weight: 600; color: white; letter-spacing: -0.2px; }
@@ -299,6 +325,8 @@
     .loading { text-align: center; padding: 2rem; color: rgba(255,255,255,0.3); font-size: 14px; font-weight: 300; }
     .sep { height: 1px; background: rgba(255,255,255,0.06); margin: 1.25rem 0; }
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
 
@@ -329,6 +357,7 @@
   <div class="tabs glass">
     <button class="tab active" onclick="switchTab('form', this)">Passation</button>
     <button class="tab" onclick="switchTab('history', this)">Historique</button>
+    <button class="tab" onclick="switchTab('terrain', this)">Terrain</button>
     <button class="tab" onclick="switchTab('live', this)">Live</button>
     <button class="tab" onclick="switchTab('rapport', this)">Rapport</button>
   </div>
@@ -514,6 +543,65 @@
     <div id="history-list"><div class="loading">Chargement...</div></div>
   </div>
 
+  <!-- TERRAIN -->
+  <div id="view-terrain" class="view">
+
+    <div id="map"></div>
+
+    <!-- Formulaire ajout rapide complet -->
+    <div class="terrain-add glass" id="terrain-form-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="terrain-add-title">Signaler un offline</div>
+        <button onclick="toggleTerrainForm()" id="terrain-form-toggle" style="padding:5px 12px;background:var(--od);border:1px solid rgba(255,85,0,0.3);border-radius:10px;font-size:12px;font-weight:500;color:var(--o);cursor:pointer;font-family:var(--font)">− Réduire</button>
+      </div>
+      <div id="terrain-form-body">
+        <div class="row2" style="margin-bottom:10px">
+          <div class="field">
+            <label>Nom du scoot *</label>
+            <input type="text" id="q-nom" placeholder="Ex : Jocelyne">
+          </div>
+          <div class="field">
+            <label>Offline depuis</label>
+            <select id="q-depuis">
+              <option value="">-- Choisir --</option>
+              <option>Moins d'1h</option><option>1h a 3h</option><option>3h a 6h</option><option>Plus de 6h</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Type d'offline *</label>
+          <input type="hidden" id="q-type" value="">
+          <div class="offline-type-row">
+            <button type="button" class="ot-btn" onclick="setQType('batterie',this)"><span class="ot-icon">🔋</span>Batterie vide</button>
+            <button type="button" class="ot-btn" onclick="setQType('offline',this)"><span class="ot-icon">⚡</span>Offline (batterie ok)</button>
+            <button type="button" class="ot-btn" onclick="setQType('session',this)"><span class="ot-icon">🚨</span>Session en cours</button>
+          </div>
+        </div>
+        <div class="row2" style="margin-bottom:10px">
+          <div class="field"><label>Localisation 2hire</label><input type="text" id="q-loc2hire" placeholder="Adresse exacte"></div>
+          <div class="field"><label>Localisation utilisateur</label><input type="text" id="q-locuser" placeholder="Si contacté..."></div>
+        </div>
+        <div class="row2" style="margin-bottom:10px">
+          <div class="field"><label>Batterie %</label><input type="number" id="q-bat" placeholder="15" min="0" max="100"></div>
+          <div class="field"></div>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>Actions à mener</label>
+          <div class="action-checks" id="q-actions">
+            ${['A garder a l\'oeil','A aller check sur place','Contacter le dernier utilisateur','Ramener a l\'atelier','Deja pris en charge'].map((a,i)=>`
+            <label class="action-check" id="qac-${i}" onclick="this.classList.toggle('checked',document.getElementById('qcb-${i}').checked)">
+              <input type="checkbox" id="qcb-${i}"> <div class="action-ring"></div><span>${a}</span>
+            </label>`).join('')}
+          </div>
+        </div>
+        <button class="terrain-add-btn" style="width:100%" onclick="addQuickOffline()">+ Signaler cet offline</button>
+      </div>
+    </div>
+
+    <div class="live-section-title">Offlines en cours <span class="live-section-count" id="terrain-count">0</span></div>
+    <div id="terrain-list"><div class="loading">Chargement...</div></div>
+  </div>
+
   <!-- LIVE -->
   <div id="view-live" class="view">
     <div class="live-header">
@@ -588,9 +676,15 @@ const PLANNING = [
 ];
 
 function getAstreinte(date) {
-  const d = new Date(date); const day = d.getDay();
-  const monday = new Date(d); monday.setDate(d.getDate() - (day===0?6:day-1));
-  const mondayStr = monday.toISOString().split('T')[0];
+  const d = new Date(date);
+  const day = d.getDay();
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - (day===0?6:day-1));
+  // Utiliser la date locale et non UTC pour éviter le décalage horaire
+  const year = monday.getFullYear();
+  const mo = String(monday.getMonth()+1).padStart(2,'0');
+  const da = String(monday.getDate()).padStart(2,'0');
+  const mondayStr = `${year}-${mo}-${da}`;
   const sorted = [...PLANNING].sort((a,b)=>a.d.localeCompare(b.d));
   let found = sorted[0];
   for (const e of sorted) { if (e.d <= mondayStr) found = e; else break; }
@@ -613,6 +707,7 @@ function switchTab(tab, el) {
   el.classList.add('active');
   document.getElementById('view-'+tab).classList.add('active');
   if (tab==='history') loadHistory();
+  if (tab==='terrain') loadTerrain();
   if (tab==='live') loadLive();
   if (tab==='rapport') loadRapport();
 }
@@ -1039,6 +1134,256 @@ function sendToWhatsApp(passationId) {
   const rnus=(window._rnus||[]).filter(r=>r.ID_Passation===passationId);
   if(!p) return;
   window.open('https://wa.me/?text='+encodeURIComponent(buildWhatsAppText(p,scooters,rnus)),'_blank');
+}
+
+// ─── TERRAIN ───
+let _map = null, _markers = [], _terrainIncidents = [], _quickOfflines = [];
+let _terrainFormOpen = true;
+
+// Données de test codées en dur avec coords GPS réelles Bordeaux
+const TEST_OFFLINES = [
+  { nom:'Jocelyne', loc2hire:'Bordeaux Quinconces, Allée d\'Orléans, 33000 Bordeaux', locuser:'Borne face au 198 cours saint louis', batterie:'26', depuis:'Plus de 6h', type:'offline', action:'A aller check sur place / Ramener a l\'atelier', _lat:44.8488, _lng:-0.5789, dureeMs:28*3600000, nbPassations:12, par:'Multiple', statut:'en-cours', dateDebut:new Date(Date.now()-28*3600000) },
+  { nom:'Pakkun', loc2hire:'31 Avenue de la Forêt d\'Arboudeau, 33290 Parempuyre', locuser:'', batterie:'42', depuis:'Plus de 6h', type:'offline', action:'A aller check sur place / Ramener a l\'atelier', _lat:44.9019, _lng:-0.6483, dureeMs:72*3600000, nbPassations:20, par:'Multiple', statut:'en-cours', dateDebut:new Date(Date.now()-72*3600000) },
+  { nom:'Fly', loc2hire:'5 Rue Gilbert Caudéran, 33320 Eysines', locuser:'', batterie:'5', depuis:'Plus de 6h', type:'batterie', action:'Deja pris en charge', _lat:44.8730, _lng:-0.6523, dureeMs:96*3600000, nbPassations:15, par:'Raphael', statut:'en-cours', dateDebut:new Date(Date.now()-96*3600000) },
+  { nom:'Oréo', loc2hire:'Cours du Général de Gaulle, 33170 Gradignan', locuser:'', batterie:'1', depuis:'3h a 6h', type:'batterie', action:'Ramener a l\'atelier', _lat:44.7878, _lng:-0.6066, dureeMs:4*3600000, nbPassations:3, par:'Martin', statut:'en-cours', dateDebut:new Date(Date.now()-4*3600000) },
+  { nom:'Boo', loc2hire:'', locuser:'', batterie:'', depuis:'Moins d\'1h', type:'session', action:'A garder a l\'oeil / A aller check sur place', _lat:44.8408, _lng:-0.5712, dureeMs:0.5*3600000, nbPassations:1, par:'Aymen', statut:'en-cours', dateDebut:new Date(Date.now()-0.5*3600000) },
+];
+
+function toggleTerrainForm() {
+  _terrainFormOpen = !_terrainFormOpen;
+  document.getElementById('terrain-form-body').style.display = _terrainFormOpen ? '' : 'none';
+  document.getElementById('terrain-form-toggle').textContent = _terrainFormOpen ? '− Réduire' : '+ Ajouter';
+}
+
+function setQType(type, btn) {
+  document.getElementById('q-type').value = type;
+  document.querySelectorAll('#terrain-form-body .ot-btn').forEach(b => b.className = 'ot-btn');
+  btn.classList.add(type==='batterie'?'sel-bat':type==='offline'?'sel-offline':'sel-session');
+}
+
+async function loadTerrain() {
+  const list = document.getElementById('terrain-list');
+  list.innerHTML = '<div class="loading">Chargement...</div>';
+
+  // Init map
+  if (!_map) {
+    setTimeout(() => {
+      _map = L.map('map', { zoomControl: true }).setView([44.837789, -0.57918], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap', maxZoom: 18
+      }).addTo(_map);
+      finishLoadTerrain();
+    }, 100);
+  } else {
+    finishLoadTerrain();
+  }
+}
+
+async function finishLoadTerrain() {
+  try {
+    const [r1, r2] = await Promise.all([
+      fetch(SCRIPT_URL + '?action=getPassations'),
+      fetch(SCRIPT_URL + '?action=getScooters')
+    ]);
+    const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+    const allPassations = (d1.passations||[]).sort((a,b) => new Date(a.Date)-new Date(b.Date));
+    const allScooters = d2.scooters||[];
+    const incidents = buildIncidents(allPassations, allScooters);
+    _terrainIncidents = incidents.filter(i => i.statut === 'en-cours');
+
+    // Récupérer dernières infos (loc, bat) pour chaque incident
+    _terrainIncidents.forEach(inc => {
+      const entries = allScooters.filter(s => s.Nom === inc.nom);
+      const latest = entries[entries.length-1] || {};
+      inc.loc2hire = latest.Loc2hire || '';
+      inc.locuser = latest.LocUser || '';
+      inc.batterie = latest.Batterie || '';
+      inc.type = latest.Urgence || latest.Type || '';
+    });
+
+    _terrainIncidents.sort((a,b) => b.dureeMs - a.dureeMs);
+  } catch(e) {
+    // Fallback sur données de test si pas de données réelles
+    if (_terrainIncidents.length === 0) {
+      _terrainIncidents = [...TEST_OFFLINES];
+      showToast('Données de test affichées', 'success');
+    }
+  }
+
+  // Si toujours vide, utiliser les données de test
+  if (_terrainIncidents.length === 0 && _quickOfflines.length === 0) {
+    _terrainIncidents = [...TEST_OFFLINES];
+  }
+
+  renderTerrainList();
+}
+
+function makeMarkerIcon(color, label) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
+    <ellipse cx="18" cy="42" rx="7" ry="2.5" fill="rgba(0,0,0,0.25)"/>
+    <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="${color}" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+    <circle cx="18" cy="18" r="9" fill="white" fill-opacity="0.92"/>
+    <text x="18" y="22" text-anchor="middle" font-size="9" font-weight="700" fill="${color}" font-family="system-ui,sans-serif">${label}</text>
+  </svg>`;
+  return L.divIcon({ html: svg, iconSize:[36,44], iconAnchor:[18,44], popupAnchor:[0,-44], className:'' });
+}
+
+function getMarkerColor(inc) {
+  if (inc.type === 'session') return '#FF453A';
+  const h = inc.dureeMs / 3600000;
+  if (h > 8) return '#FF453A';
+  if (h > 3) return '#FFD60A';
+  return '#30D158';
+}
+
+function renderTerrainList() {
+  if (!_map) return;
+  _markers.forEach(m => _map.removeLayer(m));
+  _markers = [];
+
+  const allItems = [
+    ..._quickOfflines.map(q => ({...q, isQuick:true, dureeMs:0, nbPassations:1, dateDebut:new Date()})),
+    ..._terrainIncidents
+  ];
+
+  document.getElementById('terrain-count').textContent = allItems.length;
+
+  const getDL = ms => { const h=ms/3600000; return h>8?'critical':h>3?'warn':'ok'; };
+
+  let html = '';
+  if (!allItems.length) {
+    html = '<div class="live-empty glass">Aucun scooter offline en ce moment 🎉</div>';
+  } else {
+    allItems.forEach((inc, idx) => {
+      const isQuick = !!inc.isQuick;
+      const color = getMarkerColor(inc);
+      const dureeStr = isQuick ? 'Signalé à l\'instant' : formatDuree(inc.dureeMs);
+      const loc = inc.loc2hire || inc.loc || '';
+      const typeLabel = inc.type==='batterie'?'🔋 Batterie vide':inc.type==='session'?'🚨 Session en cours':inc.type==='offline'?'⚡ Offline (batterie ok)':'';
+      const actions = inc.action ? inc.action.split(' / ').filter(Boolean) : [];
+      const fmtDebut = inc.dateDebut instanceof Date && !isNaN(inc.dateDebut)
+        ? inc.dateDebut.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      const durCls = isQuick ? 'dur-ok' : getDL(inc.dureeMs)==='critical'?'dur-critical':getDL(inc.dureeMs)==='warn'?'dur-warn':'dur-ok';
+
+      html += `<div class="terrain-card ${isQuick?'level-quick':('level-'+getDL(inc.dureeMs))}" id="tcard-${idx}">
+        <div class="terrain-card-top">
+          <div>
+            <span class="terrain-card-nom">${inc.nom}</span>
+            ${isQuick?'<span class="quick-badge">Rapide</span>':''}
+            ${typeLabel?`<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">${typeLabel}</div>`:''}
+          </div>
+          <div class="terrain-card-dur ${durCls}">${dureeStr}</div>
+        </div>
+        <div class="terrain-card-det">
+          ${loc?`<strong>2hire :</strong> ${loc}<br>`:''}
+          ${inc.locuser?`<strong>User :</strong> ${inc.locuser}<br>`:''}
+          ${inc.batterie?`<strong>Batterie :</strong> ${inc.batterie}%<br>`:''}
+          ${!isQuick&&inc.nbPassations?`Signalé <strong>${inc.nbPassations}×</strong>${fmtDebut?' depuis le '+fmtDebut:''}`:''} 
+        </div>
+        ${actions.length?`<div class="offline-card-actions" style="margin-top:8px">${actions.map(a=>`<span class="action-tag">${a}</span>`).join('')}</div>`:''}
+        <div class="terrain-card-actions">
+          <button class="btn-resolu" onclick="resolveOffline(${idx},${isQuick})">✓ Résolu</button>
+          ${loc?`<button class="btn-locate" onclick="geocodeAndZoom('${loc.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">🗺 Centrer</button>`:''}
+        </div>
+      </div>`;
+
+      // Marker
+      if (inc._lat && inc._lng) {
+        placeMarker(inc, idx, color);
+      } else if (loc) {
+        geocodeMarker(loc, inc, idx, color);
+      }
+    });
+  }
+
+  document.getElementById('terrain-list').innerHTML = html;
+  setTimeout(() => { if (_map) _map.invalidateSize(); }, 200);
+}
+
+function placeMarker(inc, idx, color) {
+  const label = inc.nom.substring(0,4).toUpperCase();
+  const marker = L.marker([inc._lat, inc._lng], { icon: makeMarkerIcon(color, label) }).addTo(_map);
+  const bat = inc.batterie ? `<br>🔋 ${inc.batterie}%` : '';
+  const dur = inc.dureeMs > 0 ? `<br>⏱ ${formatDuree(inc.dureeMs)}` : '';
+  marker.bindPopup(`<div style="font-family:system-ui;min-width:160px;font-size:13px">
+    <strong style="font-size:15px">${inc.nom}</strong>${dur}${bat}
+    <br><span style="color:#666;font-size:11px">${inc.loc2hire||''}</span>
+    ${inc.action?`<br><span style="font-size:11px;background:#f5f5f5;padding:2px 6px;border-radius:8px">${inc.action}</span>`:''}
+    <br><button onclick="resolveOffline(${idx},${!!inc.isQuick})" style="margin-top:6px;padding:5px 12px;background:#30D158;border:none;border-radius:8px;color:white;font-size:12px;cursor:pointer;font-weight:600">✓ Résolu</button>
+  </div>`);
+  _markers.push(marker);
+}
+
+async function geocodeMarker(address, inc, idx, color) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+    const data = await res.json();
+    if (data && data[0]) {
+      inc._lat = parseFloat(data[0].lat);
+      inc._lng = parseFloat(data[0].lon);
+      placeMarker(inc, idx, color);
+    }
+  } catch(e) {}
+}
+
+async function geocodeAndZoom(address) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+    const data = await res.json();
+    if (data && data[0]) {
+      _map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 16, { animate: true });
+    }
+  } catch(e) { showToast('Adresse introuvable', 'error'); }
+}
+
+function addQuickOffline() {
+  const nom = document.getElementById('q-nom').value.trim();
+  if (!nom) { showToast('Merci d\'indiquer le nom du scooter', 'error'); return; }
+  const QACTIONS = ['A garder a l\'oeil','A aller check sur place','Contacter le dernier utilisateur','Ramener a l\'atelier','Deja pris en charge'];
+  const actions = QACTIONS.filter((_,i) => document.getElementById(`qcb-${i}`)?.checked);
+  _quickOfflines.push({
+    nom,
+    loc2hire: document.getElementById('q-loc2hire').value.trim(),
+    locuser: document.getElementById('q-locuser').value.trim(),
+    batterie: document.getElementById('q-bat').value.trim(),
+    depuis: document.getElementById('q-depuis').value,
+    type: document.getElementById('q-type').value,
+    action: actions.join(' / '),
+    isQuick: true
+  });
+  // Reset form
+  ['q-nom','q-loc2hire','q-locuser','q-bat'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('q-depuis').value = '';
+  document.getElementById('q-type').value = '';
+  document.querySelectorAll('#terrain-form-body .ot-btn').forEach(b => b.className='ot-btn');
+  for(let i=0;i<5;i++){const cb=document.getElementById(`qcb-${i}`);if(cb){cb.checked=false;document.getElementById(`qac-${i}`)?.classList.remove('checked');}}
+  renderTerrainList();
+  showToast(`${nom} ajouté !`, 'success');
+}
+
+function resolveOffline(idx, isQuick) {
+  const allItems = [
+    ..._quickOfflines.map(q=>({...q,isQuick:true})),
+    ..._terrainIncidents
+  ];
+  const item = allItems[idx];
+  if (!item) return;
+  const nom = item.nom;
+
+  if (isQuick) {
+    _quickOfflines = _quickOfflines.filter(q => q.nom !== nom);
+  } else {
+    _terrainIncidents = _terrainIncidents.filter(i => i.nom !== nom);
+  }
+
+  const card = document.getElementById(`tcard-${idx}`);
+  if (card) {
+    card.style.transition = 'opacity 0.3s, transform 0.3s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(20px)';
+    setTimeout(() => renderTerrainList(), 300);
+  }
+  showToast(`${nom} marqué résolu ✓`, 'success');
 }
 
 // ─── LIVE ───
