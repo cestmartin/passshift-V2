@@ -4,314 +4,279 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pass'Shift · eDOG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --o: #FF5500; --o2: #FF7730; --od: rgba(255,85,0,0.15);
-      --s: #30D158; --sd: rgba(48,209,88,0.12);
-      --d: #FF453A; --dd: rgba(255,69,58,0.11);
-      --w: #FFD60A; --wd: rgba(255,214,10,0.11);
-      --r: 18px; --r2: 24px;
-      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      --mono: ui-monospace, 'SF Mono', 'Fira Code', monospace;
+      --bg: #0B0C0A; --surface: #16170F; --surface-2: #1E1F16; --line: #33342A;
+      --ink: #F2EFDF; --ink-dim: #9A9A88;
+      --accent: #FF5A1F; --accent-ink: #1A0D00; --accent-d: rgba(255,90,31,0.14); --accent-line: rgba(255,90,31,0.4);
+      --ok: #9BC13C; --ok-d: rgba(155,193,60,0.14);
+      --warn: #E8B23A; --warn-d: rgba(232,178,58,0.13);
+      --danger: #D9483A; --danger-d: rgba(217,72,58,0.14);
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --display: 'Bebas Neue', sans-serif;
+      --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
     }
-    body { font-family: var(--font); -webkit-font-smoothing: antialiased; background: #08080D; color: white; min-height: 100vh; overflow-x: hidden; }
-
-    /* AMBIENT BLOBS */
-    .blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-    .blob { position: absolute; border-radius: 50%; filter: blur(100px); }
-    .blob1 { width: 600px; height: 600px; background: #FF5500; opacity: 0.22; top: -200px; left: -200px; animation: b1 16s ease-in-out infinite; }
-    .blob2 { width: 500px; height: 500px; background: #5500FF; opacity: 0.18; top: 150px; right: -150px; animation: b2 20s ease-in-out infinite; }
-    .blob3 { width: 450px; height: 450px; background: #0033FF; opacity: 0.15; bottom: -100px; left: 50px; animation: b3 13s ease-in-out infinite; }
-    @keyframes b1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,30px)} }
-    @keyframes b2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,40px)} }
-    @keyframes b3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-30px)} }
-
-    /* GLASS UTILS */
-    .glass { background: rgba(255,255,255,0.07); backdrop-filter: blur(48px) saturate(180%); -webkit-backdrop-filter: blur(48px) saturate(180%); border: 1px solid rgba(255,255,255,0.13); }
-    .glass-o { background: rgba(255,85,0,0.2); backdrop-filter: blur(48px) saturate(200%); -webkit-backdrop-filter: blur(48px) saturate(200%); border: 1px solid rgba(255,120,60,0.36); }
+    body { font-family: var(--font); -webkit-font-smoothing: antialiased; background: var(--bg); color: var(--ink); min-height: 100vh; overflow-x: hidden; }
 
     /* LAYOUT */
-    .app { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; padding: 0 1.25rem 5rem; }
+    .app { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
 
     /* HEADER */
-    .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 20px; margin: 1.25rem 0 1.75rem; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; margin-bottom: 1.75rem; border-bottom: 1px solid var(--line); }
     .header-left { display: flex; align-items: center; gap: 11px; }
-    .logo { width: 38px; height: 38px; background: var(--o); border-radius: 11px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,140,80,0.4); flex-shrink: 0; }
-    .logo svg { width: 19px; height: 19px; }
-    .app-title { font-size: 17px; font-weight: 600; color: white; line-height: 1; letter-spacing: -0.2px; }
-    .app-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; font-weight: 300; }
-    .live-dot { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; color: var(--s); }
-    .live-dot::before { content: ''; width: 6px; height: 6px; background: var(--s); border-radius: 50%; animation: pulse 2s ease infinite; }
+    .logo { width: 34px; height: 34px; background: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .logo svg { width: 18px; height: 18px; }
+    .app-title { font-family: var(--display); font-size: 20px; letter-spacing: 0.5px; color: var(--ink); line-height: 1; }
+    .app-sub { font-family: var(--mono); font-size: 10px; color: var(--ink-dim); margin-top: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .live-dot { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ok); }
+    .live-dot::before { content: ''; width: 6px; height: 6px; background: var(--ok); animation: pulse 2s ease infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
 
     /* TABS */
-    .tabs { display: flex; gap: 3px; padding: 4px; border-radius: var(--r); margin-bottom: 1.75rem; }
-    .tab { flex: 1; padding: 10px 6px; font-size: 12px; font-weight: 500; border: none; background: transparent; cursor: pointer; color: rgba(255,255,255,0.4); transition: all 0.2s; border-radius: 14px; font-family: var(--font); letter-spacing: 0.1px; }
-    .tab.active { background: rgba(255,85,0,0.85); color: white; font-weight: 600; box-shadow: 0 4px 14px rgba(255,85,0,0.3); }
-    .tab:not(.active):hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7); }
+    .tabs { display: flex; gap: 0; margin-bottom: 2rem; border: 1px solid var(--line); }
+    .tab { flex: 1; padding: 11px 6px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; border: none; border-right: 1px solid var(--line); background: transparent; cursor: pointer; color: var(--ink-dim); transition: all 0.15s; }
+    .tab:last-child { border-right: none; }
+    .tab.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+    .tab:not(.active):hover { background: var(--surface-2); color: var(--ink); }
 
     .view { display: none; } .view.active { display: block; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-    .anim { animation: fadeUp 0.35s ease both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .anim { animation: fadeUp 0.3s ease both; }
 
     /* STEPPER */
-    .stepper { display: flex; align-items: center; margin-bottom: 2rem; }
-    .step { display: flex; align-items: center; flex: 1; }
-    .step-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; transition: all 0.3s; border: 1.5px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.35); background: transparent; }
-    .step-dot.active { background: var(--o); border-color: var(--o); color: white; box-shadow: 0 0 0 4px rgba(255,85,0,0.2); }
-    .step-dot.done { background: var(--s); border-color: var(--s); color: white; }
-    .step-line { flex: 1; height: 1.5px; background: rgba(255,255,255,0.1); transition: background 0.3s; margin: 0 6px; }
-    .step-line.done { background: var(--s); }
+    .stepper { display: flex; align-items: baseline; gap: 10px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+    .step { display: flex; align-items: baseline; flex: 1; }
+    .step-dot { font-family: var(--display); font-size: 30px; line-height: 1; color: var(--line); transition: color 0.2s; }
+    .step-dot.active { color: var(--accent); }
+    .step-dot.done { color: var(--ok); }
+    .step-line { flex: 1; height: 1px; background: var(--line); margin: 0 8px; transition: background 0.3s; }
+    .step-line.done { background: var(--ok); }
 
     /* HERO */
     .hero { margin-bottom: 1.75rem; }
-    .hero-step { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; }
-    .hero-title { font-size: 42px; font-weight: 700; color: white; line-height: 1.05; letter-spacing: -1px; margin-bottom: 6px; }
-    .hero-title em { color: var(--o); font-style: normal; }
-    .hero-desc { font-size: 14px; color: rgba(255,255,255,0.4); font-weight: 300; line-height: 1.6; }
+    .hero-step { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--accent); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 8px; }
+    .hero-title { font-family: var(--display); font-size: clamp(40px,9vw,56px); line-height: 0.92; letter-spacing: 0.01em; color: var(--ink); margin-bottom: 8px; }
+    .hero-title em { color: var(--accent); font-style: normal; }
+    .hero-desc { font-family: var(--mono); font-size: 12.5px; color: var(--ink-dim); font-weight: 400; line-height: 1.6; max-width: 52ch; }
 
     /* ASTREINTE CARD */
-    .astr-card { border-radius: var(--r2); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; position: relative; overflow: hidden; }
-    .astr-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,190,110,0.5), transparent); }
-    .astr-label { font-size: 10px; font-weight: 500; color: rgba(255,190,120,0.65); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px; }
+    .astr-card { border: 1px solid var(--line); border-top: 3px solid var(--accent); background: var(--surface); padding: 1.1rem 1.4rem; margin-bottom: 1.25rem; }
+    .astr-label { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--accent); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px; }
     .astr-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .astr-name { font-size: 36px; font-weight: 700; color: white; letter-spacing: -1px; line-height: 1; }
-    .astr-tel { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 4px; font-weight: 300; font-family: var(--mono); letter-spacing: 0.8px; }
-    .astr-circle { width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.16); flex-shrink: 0; }
-    .astr-circle svg { width: 20px; height: 20px; stroke: rgba(255,190,120,0.85); fill: none; stroke-width: 1.7; stroke-linecap: round; }
+    .astr-name { font-family: var(--display); font-size: 34px; letter-spacing: 0.02em; color: var(--ink); line-height: 1; }
+    .astr-tel { font-size: 13px; color: var(--ink-dim); margin-top: 5px; font-weight: 400; font-family: var(--mono); letter-spacing: 0.04em; }
+    .astr-circle { width: 40px; height: 40px; background: var(--surface-2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .astr-circle svg { width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.7; stroke-linecap: round; }
 
     /* SECTION CARD */
-    .section { border-radius: var(--r2); padding: 1.25rem 1.4rem; margin-bottom: 1rem; transition: border-color 0.2s; }
-    .section:focus-within { border-color: rgba(255,85,0,0.4) !important; }
+    .section { border: 1px solid var(--line); background: var(--surface); padding: 1.25rem 1.4rem; margin-bottom: 1rem; transition: border-color 0.2s; }
+    .section:focus-within { border-color: var(--accent-line) !important; }
     .section-header { display: flex; align-items: center; gap: 9px; margin-bottom: 1rem; }
-    .section-icon { width: 30px; height: 30px; border-radius: 9px; background: var(--od); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .section-icon svg { width: 15px; height: 15px; stroke: var(--o); fill: none; stroke-width: 2; stroke-linecap: round; }
-    .section-title { font-size: 13px; font-weight: 600; color: white; letter-spacing: 0.1px; }
-    .section-sub { font-size: 11px; color: rgba(255,255,255,0.35); font-weight: 300; margin-top: 1px; }
-    .required-star { color: var(--o); }
+    .section-icon { width: 26px; height: 26px; background: var(--accent-d); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .section-icon svg { width: 14px; height: 14px; stroke: var(--accent); fill: none; stroke-width: 2; stroke-linecap: round; }
+    .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink); text-transform: uppercase; letter-spacing: 0.08em; }
+    .section-sub { font-size: 12px; color: var(--ink-dim); font-weight: 400; margin-top: 2px; }
+    .required-star { color: var(--accent); }
 
     /* FIELDS */
     .field { margin-bottom: 10px; } .field:last-child { margin-bottom: 0; }
-    .field label { display: block; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.4); margin-bottom: 5px; letter-spacing: 0.2px; }
+    .field label { display: block; font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--ink-dim); margin-bottom: 6px; letter-spacing: 0.03em; }
     .field input[type=text], .field input[type=number], .field select, .field textarea {
-      width: 100%; padding: 11px 13px; font-size: 15px;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 14px; color: white; font-family: var(--font);
-      outline: none; transition: all 0.2s; font-weight: 400;
+      width: 100%; padding: 10px 12px; font-size: 15px;
+      background: var(--surface-2); border: 1px solid var(--line);
+      color: var(--ink); font-family: var(--font);
+      outline: none; transition: all 0.15s; font-weight: 400;
     }
-    .field input:focus, .field select:focus, .field textarea:focus { background: rgba(255,255,255,0.09); border-color: rgba(255,85,0,0.55); box-shadow: 0 0 0 3px rgba(255,85,0,0.12); }
-    .field input::placeholder, .field textarea::placeholder { color: rgba(255,255,255,0.2); }
-    .field textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
-    .field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='rgba(255,255,255,0.35)'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-    .field input.invalid { border-color: var(--d); }
-    .field select option { background: #1a1a20; color: white; }
-    .error-msg { font-size: 12px; color: var(--d); margin-top: 4px; display: none; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+    .field input::placeholder, .field textarea::placeholder { color: var(--ink-dim); opacity: 0.6; }
+    .field textarea { resize: vertical; min-height: 70px; line-height: 1.5; font-family: var(--font); }
+    .field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%239A9A88'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+    .field input.invalid { border-color: var(--danger); }
+    .field select option { background: var(--surface); color: var(--ink); }
+    .error-msg { font-family: var(--mono); font-size: 11px; color: var(--danger); margin-top: 5px; display: none; }
     .error-msg.show { display: block; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     @media(max-width:500px) { .row2 { grid-template-columns: 1fr; } }
 
     /* NOW BUTTON */
     .now-wrap { display: flex; gap: 7px; }
-    .now-btn { padding: 11px 13px; background: var(--od); border: 1px solid rgba(255,100,40,0.3); border-radius: 14px; font-size: 12px; font-weight: 500; color: rgba(255,150,80,0.9); cursor: pointer; font-family: var(--font); white-space: nowrap; transition: all 0.18s; letter-spacing: 0.3px; text-transform: uppercase; }
-    .now-btn:hover { background: rgba(255,85,0,0.25); }
+    .now-btn { padding: 10px 13px; background: transparent; border: 1px solid var(--line); font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--accent); cursor: pointer; white-space: nowrap; transition: all 0.15s; letter-spacing: 0.06em; text-transform: uppercase; }
+    .now-btn:hover { background: var(--accent-d); border-color: var(--accent-line); }
 
     /* ACTION CHECKBOXES */
-    .action-checks { display: flex; flex-direction: column; gap: 7px; }
-    .action-check { display: flex; align-items: center; gap: 11px; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; cursor: pointer; transition: all 0.18s; user-select: none; }
-    .action-check:hover { background: rgba(255,255,255,0.07); }
-    .action-check.checked { background: rgba(255,85,0,0.12); border-color: rgba(255,100,50,0.3); }
+    .action-checks { display: flex; flex-direction: column; gap: 6px; }
+    .action-check { display: flex; align-items: center; gap: 11px; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; transition: all 0.15s; user-select: none; }
+    .action-check:hover { border-color: var(--accent-line); }
+    .action-check.checked { background: var(--accent-d); border-color: var(--accent-line); }
     .action-check input[type=checkbox] { display: none; }
-    .action-ring { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-    .action-check.checked .action-ring { background: var(--o); border-color: var(--o); box-shadow: 0 0 8px rgba(255,85,0,0.4); }
-    .action-check.checked .action-ring::after { content: ''; width: 7px; height: 7px; background: white; border-radius: 50%; }
-    .action-check span { font-size: 14px; color: rgba(255,255,255,0.65); font-weight: 400; transition: color 0.2s; }
-    .action-check.checked span { color: rgba(255,155,85,0.95); font-weight: 500; }
+    .action-ring { width: 15px; height: 15px; border: 1.5px solid var(--line); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .action-check.checked .action-ring { background: var(--accent); border-color: var(--accent); }
+    .action-check.checked .action-ring::after { content: ''; width: 6px; height: 6px; background: var(--accent-ink); }
+    .action-check span { font-size: 13.5px; color: var(--ink-dim); font-weight: 400; transition: color 0.15s; }
+    .action-check.checked span { color: var(--ink); font-weight: 500; }
 
-    /* SCOOTER / RNU ITEMS */
-    .scooter-item { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid var(--o); border-radius: var(--r); padding: 13px; padding-top: 36px; margin-bottom: 10px; position: relative; }
-    .rnu-item { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid #5B8AF5; border-radius: var(--r); padding: 13px; padding-top: 36px; margin-bottom: 10px; position: relative; }
-    .item-label { position: absolute; top: 10px; left: 13px; font-size: 10px; font-weight: 600; color: var(--o); text-transform: uppercase; letter-spacing: 0.8px; }
-    .remove-btn { position: absolute; top: 8px; right: 10px; background: none; border: none; cursor: pointer; font-size: 18px; color: rgba(255,255,255,0.25); line-height: 1; transition: color 0.15s; }
-    .remove-btn:hover { color: var(--d); }
-    .scooter-item .field input, .scooter-item .field select, .rnu-item .field input { background: rgba(255,255,255,0.06); }
+    /* ACCIDENT ITEM (shares item-label/remove-btn with other list entries) */
+    .item-label { position: absolute; top: 10px; left: 13px; font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
+    .remove-btn { position: absolute; top: 6px; right: 8px; background: none; border: none; cursor: pointer; font-size: 18px; color: var(--ink-dim); line-height: 1; transition: color 0.15s; }
+    .remove-btn:hover { color: var(--danger); }
+
+    /* FLEET STATUS GRID */
+    .fleet-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 12px; }
+    @media(max-width:500px) { .fleet-grid { grid-template-columns: 1fr; } }
+    .fleet-cell { background: var(--surface); padding: 12px 14px; }
+    .fleet-cell label { display: block; font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--ink-dim); margin-bottom: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .fleet-cell input { width: 100%; padding: 4px 0; font-size: 22px; font-family: var(--mono); font-weight: 600; background: transparent; border: none; border-bottom: 1px solid var(--line); color: var(--ink); outline: none; transition: border-color 0.15s; font-variant-numeric: tabular-nums; }
+    .fleet-cell input:focus { border-bottom-color: var(--accent); }
+    .vigilance-box { display: flex; gap: 10px; align-items: flex-start; background: var(--surface-2); border-left: 3px solid var(--warn); padding: 12px 14px; font-size: 12.5px; color: var(--ink-dim); line-height: 1.5; }
+    .vigilance-box b { color: var(--warn); font-family: var(--mono); }
+
+    /* DAMAGE DELTA */
+    .dmg-delta { font-size: 12px; font-family: var(--mono); margin-top: 6px; font-weight: 600; }
+    .dmg-delta.delta-up { color: var(--danger); }
+    .dmg-delta.delta-down { color: var(--ok); }
+    .dmg-delta.delta-flat { color: var(--ink-dim); }
 
     /* ADD BUTTON */
-    .add-btn { width: 100%; padding: 11px; border: 1px dashed rgba(255,85,0,0.3); border-radius: var(--r); background: transparent; cursor: pointer; font-size: 13px; font-weight: 500; color: rgba(255,150,80,0.8); display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.18s; font-family: var(--font); }
-    .add-btn:hover { background: var(--od); border-color: rgba(255,85,0,0.5); color: rgba(255,150,80,1); }
+    .add-btn { width: 100%; padding: 11px; border: 1px dashed var(--line); background: transparent; cursor: pointer; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; }
+    .add-btn:hover { background: var(--accent-d); border-color: var(--accent-line); }
 
     /* STATUS BUTTONS */
-    .status-row { display: flex; gap: 8px; margin-bottom: 10px; }
-    .status-btn { flex: 1; padding: 14px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.5); font-family: var(--font); transition: all 0.2s; text-align: center; }
-    .status-btn .ico { font-size: 20px; display: block; margin-bottom: 4px; }
-    .status-btn.sel-oui { background: var(--sd); border-color: rgba(48,209,88,0.3); color: var(--s); }
-    .status-btn.sel-non { background: var(--dd); border-color: rgba(255,69,58,0.28); color: var(--d); }
+    .status-row { display: flex; gap: 0; margin-bottom: 10px; border: 1px solid var(--line); width: fit-content; }
+    .status-btn { flex: 1; padding: 10px 22px; border: none; border-right: 1px solid var(--line); background: transparent; cursor: pointer; font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--ink-dim); transition: all 0.15s; text-align: center; }
+    .status-btn:last-child { border-right: none; }
+    .status-btn .ico { display: none; }
+    .status-btn.sel-oui { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+    .status-btn.sel-non { background: var(--surface-2); color: var(--danger); font-weight: 600; }
 
     /* TRIPS */
-    .check-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; transition: all 0.18s; }
-    .check-row:hover { background: rgba(255,255,255,0.07); }
-    .check-row input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: var(--o); }
-    .check-row label { font-size: 14px; color: rgba(255,255,255,0.65); cursor: pointer; font-weight: 400; }
+    .check-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--line); transition: all 0.15s; }
+    .check-row:hover { border-color: var(--accent-line); }
+    .check-row input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; accent-color: var(--accent); }
+    .check-row label { font-size: 13.5px; color: var(--ink-dim); cursor: pointer; font-weight: 400; }
     .hidden { display: none !important; }
 
     /* NAV BUTTONS */
-    .nav-btns { display: flex; gap: 9px; margin-top: 1rem; }
-    .btn-prev { flex: 1; padding: 14px; border-radius: var(--r); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); font-size: 14px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: all 0.15s; }
-    .btn-prev:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
-    .btn-next { flex: 2; padding: 14px; border: none; border-radius: var(--r); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16); color: white; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--font); transition: all 0.2s; }
-    .btn-next:hover { background: rgba(255,255,255,0.16); }
+    .nav-btns { display: flex; gap: 0; margin-top: 1rem; border: 1px solid var(--line); }
+    .btn-prev { flex: 1; padding: 13px; background: transparent; border: none; border-right: 1px solid var(--line); color: var(--ink-dim); font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+    .btn-prev:hover { background: var(--surface-2); color: var(--ink); }
+    .btn-next { flex: 2; padding: 13px; border: none; background: var(--accent); color: var(--accent-ink); font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn-next:hover { background: #FF7A40; }
 
     /* SUBMIT */
-    .submit-btn { width: 100%; padding: 17px; background: rgba(255,85,0,0.88); color: white; border: none; border-radius: var(--r); font-size: 16px; font-weight: 600; cursor: pointer; font-family: var(--font); margin-top: 0.75rem; transition: all 0.22s; border: 1px solid rgba(255,140,70,0.36); box-shadow: 0 8px 24px rgba(255,85,0,0.28); letter-spacing: 0.1px; }
-    .submit-btn:hover { background: rgba(255,100,20,0.94); box-shadow: 0 10px 30px rgba(255,85,0,0.4); transform: translateY(-1px); }
+    .submit-btn { width: 100%; padding: 16px; background: var(--accent); color: var(--accent-ink); border: none; font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; cursor: pointer; margin-top: 0.75rem; transition: all 0.15s; }
+    .submit-btn:hover { background: #FF7A40; }
     .submit-btn:active { transform: translateY(1px); }
     .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
     /* TOAST */
-    .toast { position: fixed; top: 20px; right: 20px; padding: 12px 18px; border-radius: var(--r); font-size: 14px; font-weight: 500; display: none; z-index: 200; max-width: 320px; backdrop-filter: blur(20px); }
-    .toast.success { background: rgba(48,209,88,0.2); color: var(--s); border: 1px solid rgba(48,209,88,0.3); }
-    .toast.error { background: rgba(255,69,58,0.2); color: var(--d); border: 1px solid rgba(255,69,58,0.3); }
+    .toast { position: fixed; top: 20px; right: 20px; padding: 12px 18px; font-family: var(--mono); font-size: 13px; font-weight: 500; display: none; z-index: 200; max-width: 320px; border: 1px solid; }
+    .toast.success { background: var(--surface); color: var(--ok); border-color: var(--ok); }
+    .toast.error { background: var(--surface); color: var(--danger); border-color: var(--danger); }
 
     /* MODAL */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(8px); }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
     .modal-overlay.hidden { display: none; }
-    .modal { background: rgba(20,20,28,0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--r2); padding: 1.5rem; max-width: 360px; width: 100%; }
-    .modal-title { font-size: 18px; font-weight: 600; color: white; margin-bottom: 8px; letter-spacing: -0.3px; }
-    .modal-msg { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; margin-bottom: 1.25rem; font-weight: 300; }
-    .modal-btns { display: flex; gap: 8px; }
-    .modal-cancel { flex: 1; padding: 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: var(--r); background: transparent; color: rgba(255,255,255,0.5); font-size: 14px; font-weight: 500; cursor: pointer; font-family: var(--font); }
-    .modal-confirm { flex: 2; padding: 12px; border: none; border-radius: var(--r); background: var(--o); color: white; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--font); }
+    .modal { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--accent); padding: 1.5rem; max-width: 360px; width: 100%; }
+    .modal-title { font-family: var(--display); font-size: 22px; letter-spacing: 0.02em; color: var(--ink); margin-bottom: 8px; }
+    .modal-msg { font-size: 13.5px; color: var(--ink-dim); line-height: 1.6; margin-bottom: 1.25rem; font-weight: 400; }
+    .modal-btns { display: flex; gap: 0; border: 1px solid var(--line); }
+    .modal-cancel { flex: 1; padding: 12px; border: none; border-right: 1px solid var(--line); background: transparent; color: var(--ink-dim); font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 500; cursor: pointer; }
+    .modal-confirm { flex: 2; padding: 12px; border: none; background: var(--accent); color: var(--accent-ink); font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; cursor: pointer; }
 
     /* PREV RECAP */
-    .prev-recap { background: rgba(255,214,10,0.06); border: 1px solid rgba(255,214,10,0.2); border-radius: var(--r2); padding: 1rem 1.25rem; margin-bottom: 1rem; }
-    .prev-recap-title { font-size: 10px; font-weight: 600; color: rgba(255,214,10,0.7); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px; }
-    .prev-recap-content { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.8; font-weight: 300; }
-    .diff-same { color: rgba(255,255,255,0.4); }
-    .diff-new { color: var(--s); }
-    .diff-gone { color: var(--d); }
+    .prev-recap { background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--warn); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .prev-recap-title { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--warn); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+    .prev-recap-content { font-size: 13px; color: var(--ink-dim); line-height: 1.8; font-weight: 400; }
+    .diff-same { color: var(--ink-dim); }
+    .diff-new { color: var(--ok); }
+    .diff-gone { color: var(--danger); }
 
     /* HISTORY */
-    .passation-card { border-radius: var(--r2); padding: 1.25rem; margin-bottom: 10px; transition: border-color 0.2s; }
-    .passation-card:hover { border-color: rgba(255,85,0,0.3) !important; }
+    .passation-card { border: 1px solid var(--line); background: var(--surface); padding: 1.25rem; margin-bottom: 10px; transition: border-color 0.2s; }
+    .passation-card:hover { border-color: var(--accent-line) !important; }
     .passation-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
-    .passation-name { font-size: 16px; font-weight: 600; color: white; margin-bottom: 2px; letter-spacing: -0.2px; }
-    .passation-meta { font-size: 12px; color: rgba(255,255,255,0.35); font-weight: 300; }
-    .creneau-badge { font-size: 11px; font-weight: 500; padding: 4px 11px; border-radius: 20px; background: var(--od); color: rgba(255,150,80,0.9); white-space: nowrap; flex-shrink: 0; border: 1px solid rgba(255,85,0,0.22); }
+    .passation-name { font-family: var(--display); font-size: 22px; letter-spacing: 0.02em; color: var(--ink); margin-bottom: 2px; }
+    .passation-meta { font-family: var(--mono); font-size: 11px; color: var(--ink-dim); font-weight: 400; }
+    .creneau-badge { font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 4px 10px; background: var(--accent-d); color: var(--accent); white-space: nowrap; flex-shrink: 0; border: 1px solid var(--accent-line); }
     .pills { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
-    .pill { display: inline-flex; align-items: center; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
-    .pill-ok { background: var(--sd); color: var(--s); border: 1px solid rgba(48,209,88,0.22); }
-    .pill-nok { background: var(--dd); color: var(--d); border: 1px solid rgba(255,69,58,0.22); }
-    .astreinte-line { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 10px; font-weight: 300; }
-    .astreinte-line strong { color: rgba(255,255,255,0.8); font-weight: 500; }
-    .msg-block { font-size: 13px; color: rgba(255,255,255,0.6); padding: 10px 12px; background: rgba(255,255,255,0.04); border-radius: 12px; line-height: 1.5; margin-bottom: 10px; border-left: 3px solid var(--o); font-weight: 300; }
-    .sub-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.07); }
-    .sub-title { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-    .offline-row { font-size: 13px; padding: 10px 12px; background: rgba(255,255,255,0.04); border-radius: 12px; margin-bottom: 6px; line-height: 1.7; border-left: 3px solid var(--o); font-weight: 300; }
-    .offline-row strong { font-weight: 600; color: white; }
-    .rnu-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-    .rnu-tag { font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 20px; background: rgba(91,138,245,0.12); color: #8BB4FF; border: 1px solid rgba(91,138,245,0.22); }
+    .pill { display: inline-flex; align-items: center; font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 3px 9px; }
+    .pill-ok { background: var(--ok-d); color: var(--ok); border: 1px solid var(--ok); }
+    .pill-nok { background: var(--danger-d); color: var(--danger); border: 1px solid var(--danger); }
+    .astreinte-line { font-size: 13px; color: var(--ink-dim); margin-bottom: 10px; font-weight: 400; }
+    .astreinte-line strong { color: var(--ink); font-weight: 600; }
+    .msg-block { font-size: 13px; color: var(--ink); padding: 10px 12px; background: var(--surface-2); line-height: 1.5; margin-bottom: 10px; border-left: 3px solid var(--accent); font-weight: 400; }
+    .sub-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .sub-title { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
 
     /* WA BUTTON */
-    .wa-btn { width: 100%; margin-top: 12px; padding: 11px; background: rgba(37,211,102,0.18); border: 1px solid rgba(37,211,102,0.3); border-radius: var(--r); font-size: 13px; font-weight: 500; cursor: pointer; color: #25D366; font-family: var(--font); transition: all 0.18s; display: flex; align-items: center; justify-content: center; gap: 7px; }
-    .wa-btn:hover { background: rgba(37,211,102,0.25); }
+    .wa-btn { width: 100%; margin-top: 12px; padding: 11px; background: transparent; border: 1px solid var(--ok); font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 500; cursor: pointer; color: var(--ok); transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+    .wa-btn:hover { background: var(--ok-d); }
 
     /* LIVE */
     .live-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px; }
-    .live-title-text { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 1px; }
-    .live-updated { font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 2px; font-weight: 300; }
+    .live-title-text { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+    .live-updated { font-family: var(--mono); font-size: 10px; color: var(--ink-dim); margin-top: 3px; font-weight: 400; }
     .live-controls { display: flex; gap: 6px; }
-    .refresh-btn { padding: 8px 14px; font-size: 12px; font-weight: 500; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; background: rgba(255,255,255,0.06); cursor: pointer; color: rgba(255,255,255,0.5); font-family: var(--font); transition: all 0.15s; display: flex; align-items: center; gap: 5px; }
-    .refresh-btn:hover { border-color: rgba(255,85,0,0.4); color: rgba(255,150,80,0.9); }
-
-    /* OFFLINE TYPE */
-    .offline-type-row { display: flex; gap: 7px; margin-bottom: 11px; flex-wrap: wrap; }
-    .ot-btn { flex: 1; min-width: 80px; padding: 10px 8px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); cursor: pointer; font-family: var(--font); font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.5); text-align: center; transition: all 0.18s; line-height: 1.4; }
-    .ot-btn .ot-icon { font-size: 18px; display: block; margin-bottom: 4px; }
-    .ot-btn.sel-bat { background: rgba(255,214,10,0.12); border-color: rgba(255,214,10,0.35); color: #FFD60A; }
-    .ot-btn.sel-offline { background: rgba(255,85,0,0.12); border-color: rgba(255,85,0,0.35); color: #FF7730; }
-    .ot-btn.sel-session { background: rgba(255,69,58,0.15); border-color: rgba(255,69,58,0.45); color: #FF453A; }
+    .refresh-btn { padding: 8px 14px; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; border: 1px solid var(--line); background: transparent; cursor: pointer; color: var(--ink-dim); transition: all 0.15s; display: flex; align-items: center; gap: 5px; }
+    .refresh-btn:hover { border-color: var(--accent-line); color: var(--accent); }
 
     /* ACCIDENT */
-    .accident-item { background: rgba(255,69,58,0.07); border: 1px solid rgba(255,69,58,0.25); border-left: 4px solid #FF453A; border-radius: var(--r); padding: 13px; padding-top: 36px; margin-bottom: 10px; position: relative; }
-    .accident-item .item-label { color: #FF453A; }
+    .accident-item { background: var(--danger-d); border: 1px solid var(--danger); border-left: 4px solid var(--danger); padding: 13px; padding-top: 36px; margin-bottom: 10px; position: relative; }
+    .accident-item .item-label { color: var(--danger); }
     .refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
     @keyframes spin { to{transform:rotate(360deg)} }
 
-    .offline-card { border-radius: var(--r2); padding: 1rem 1.25rem; margin-bottom: 10px; border-left: 4px solid; }
-    .offline-card.level-critical { background: rgba(255,69,58,0.07); border-color: var(--d); }
-    .offline-card.level-warn { background: rgba(255,214,10,0.06); border-color: var(--w); }
-    .offline-card.level-ok { background: rgba(48,209,88,0.05); border-color: var(--s); }
-    .offline-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
-    .offline-card-nom { font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.5px; }
-    .offline-duration { font-size: 13px; font-weight: 600; padding: 5px 13px; border-radius: 20px; white-space: nowrap; font-family: var(--mono); }
-    .dur-critical { background: var(--dd); color: var(--d); border: 1px solid rgba(255,69,58,0.25); }
-    .dur-warn { background: var(--wd); color: var(--w); border: 1px solid rgba(255,214,10,0.25); }
-    .dur-ok { background: var(--sd); color: var(--s); border: 1px solid rgba(48,209,88,0.25); }
-    .offline-card-details { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.8; font-weight: 300; }
-    .offline-card-details strong { color: rgba(255,255,255,0.8); font-weight: 500; }
-    .offline-card-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-    .action-tag { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); border: 1px solid rgba(255,255,255,0.08); }
-    .rnu-card { background: rgba(91,138,245,0.07); border: 1px solid rgba(91,138,245,0.18); border-radius: 14px; padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
-    .rnu-card-nom { font-size: 16px; font-weight: 600; color: white; }
-    .rnu-card-meta { font-size: 12px; color: rgba(255,255,255,0.35); font-weight: 300; }
-    .live-section-title { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; margin-top: 1.25rem; display: flex; align-items: center; justify-content: space-between; }
-    .live-section-count { background: rgba(255,255,255,0.07); border-radius: 20px; padding: 2px 9px; font-size: 11px; }
-    .live-stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1.25rem; }
-    .live-stat { border-radius: var(--r); padding: 12px; text-align: center; }
-    .live-stat-num { font-size: 28px; font-weight: 700; line-height: 1; letter-spacing: -0.5px; }
-    .live-stat-label { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
-    .live-empty { text-align: center; padding: 2rem; color: rgba(255,255,255,0.3); font-size: 14px; border-radius: var(--r2); font-weight: 300; }
+    .live-section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; margin-top: 1.25rem; display: flex; align-items: center; justify-content: space-between; }
+    .live-section-count { background: var(--surface-2); border: 1px solid var(--line); padding: 2px 9px; font-family: var(--mono); font-size: 11px; }
+    .live-stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 0.5rem; }
+    @media(max-width:500px) { .live-stat-row { grid-template-columns: repeat(2,1fr); } }
+    .live-stat { background: var(--surface); padding: 12px; text-align: center; }
+    .live-stat-num { font-size: 24px; font-weight: 600; line-height: 1; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+    .live-stat-label { font-family: var(--mono); font-size: 10px; color: var(--ink-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
+    .live-stat-delta { font-size: 10px; margin-top: 3px; font-family: var(--mono); }
+    .live-empty { text-align: center; padding: 2rem; color: var(--ink-dim); font-size: 14px; border: 1px solid var(--line); font-weight: 400; }
 
 
     /* RAPPORT */
     .rapport-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px; }
-    .rapport-week { font-size: 14px; font-weight: 600; color: white; letter-spacing: -0.2px; }
+    .rapport-week { font-family: var(--display); font-size: 22px; letter-spacing: 0.02em; color: var(--ink); }
     .rapport-controls { display: flex; gap: 6px; }
-    .r-nav-btn { padding: 7px 13px; font-size: 12px; font-weight: 500; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; background: rgba(255,255,255,0.05); cursor: pointer; color: rgba(255,255,255,0.45); font-family: var(--font); transition: all 0.15s; }
-    .r-nav-btn:hover { border-color: rgba(255,85,0,0.35); color: rgba(255,150,80,0.9); }
-    .export-btn { padding: 7px 14px; font-size: 12px; font-weight: 500; border: none; border-radius: 12px; background: rgba(48,209,88,0.2); cursor: pointer; color: var(--s); font-family: var(--font); transition: all 0.15s; border: 1px solid rgba(48,209,88,0.25); }
+    .r-nav-btn { padding: 7px 13px; font-family: var(--mono); font-size: 11px; font-weight: 500; border: 1px solid var(--line); background: transparent; cursor: pointer; color: var(--ink-dim); transition: all 0.15s; }
+    .r-nav-btn:hover { border-color: var(--accent-line); color: var(--accent); }
+    .export-btn { padding: 7px 14px; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; border: 1px solid var(--ok); background: transparent; cursor: pointer; color: var(--ok); transition: all 0.15s; }
+    .export-btn:hover { background: var(--ok-d); }
     .export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 1rem; }
+    .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 1rem; }
     @media(max-width:500px) { .stat-grid { grid-template-columns: repeat(2,1fr); } }
-    .stat-card { border-radius: var(--r); padding: 12px; text-align: center; }
-    .stat-num { font-size: 26px; font-weight: 700; color: rgba(255,150,80,0.9); line-height: 1; letter-spacing: -0.5px; }
-    .stat-num.danger { color: var(--d); }
-    .stat-num.success { color: var(--s); }
-    .stat-num.warn { font-size: 18px; color: var(--w); }
-    .stat-label { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
-    .incident-table-wrap { overflow-x: auto; border-radius: var(--r2); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 1rem; }
-    .incident-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 600px; }
-    .incident-table th { background: rgba(255,255,255,0.04); padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
-    .incident-table td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; color: rgba(255,255,255,0.7); line-height: 1.5; font-weight: 300; }
+    .stat-card { background: var(--surface); padding: 14px 12px; text-align: center; }
+    .stat-num { font-family: var(--mono); font-size: 24px; font-weight: 600; color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums; }
+    .stat-num.danger { color: var(--danger); }
+    .stat-num.success { color: var(--ok); }
+    .stat-num.warn { font-size: 16px; color: var(--warn); }
+    .stat-label { font-family: var(--mono); font-size: 10px; color: var(--ink-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
+    .incident-table-wrap { overflow-x: auto; border: 1px solid var(--line); margin-bottom: 1rem; }
+    .incident-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 640px; }
+    .incident-table th { background: var(--surface-2); padding: 10px 12px; text-align: left; font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    .incident-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink-dim); line-height: 1.5; font-weight: 400; font-variant-numeric: tabular-nums; }
     .incident-table tr:last-child td { border-bottom: none; }
-    .incident-table tr:hover td { background: rgba(255,255,255,0.02); }
-    .incident-table tr.row-en-cours td { background: rgba(255,69,58,0.03); }
-    .incident-table tr.row-resolu td { background: rgba(48,209,88,0.02); }
-    .badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
-    .badge-en-cours { background: var(--dd); color: var(--d); border: 1px solid rgba(255,69,58,0.25); }
-    .badge-resolu { background: var(--sd); color: var(--s); border: 1px solid rgba(48,209,88,0.22); }
-    .scooter-nom { font-size: 14px; font-weight: 600; color: white; }
+    .incident-table tr:hover td { background: var(--surface-2); }
+    .badge { display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 500; padding: 2px 8px; white-space: nowrap; }
+    .badge-ok { background: var(--ok-d); color: var(--ok); border: 1px solid var(--ok); }
+    .badge-nok { background: var(--danger-d); color: var(--danger); border: 1px solid var(--danger); }
     .duree-cell { font-size: 13px; font-weight: 600; font-family: var(--mono); }
-    .duree-long { color: var(--d); } .duree-moyen { color: var(--w); } .duree-court { color: var(--s); }
-    .filter-row { display: flex; gap: 7px; margin-bottom: 1rem; flex-wrap: wrap; }
-    .filter-btn { padding: 6px 13px; font-size: 12px; font-weight: 500; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; background: transparent; cursor: pointer; color: rgba(255,255,255,0.4); font-family: var(--font); transition: all 0.15s; }
-    .filter-btn.active { background: var(--od); border-color: rgba(255,85,0,0.35); color: rgba(255,150,80,0.9); }
-    .empty { text-align: center; padding: 3rem; color: rgba(255,255,255,0.3); font-size: 14px; font-weight: 300; }
-    .loading { text-align: center; padding: 2rem; color: rgba(255,255,255,0.3); font-size: 14px; font-weight: 300; }
-    .sep { height: 1px; background: rgba(255,255,255,0.06); margin: 1.25rem 0; }
+    .empty { text-align: center; padding: 3rem; color: var(--ink-dim); font-size: 14px; font-weight: 400; }
+    .loading { text-align: center; padding: 2rem; color: var(--ink-dim); font-size: 14px; font-weight: 400; }
+    .sep { height: 1px; background: var(--line); margin: 1.25rem 0; }
   </style>
 </head>
 <body>
 
-<div class="blobs">
-  <div class="blob blob1"></div>
-  <div class="blob blob2"></div>
-  <div class="blob blob3"></div>
-</div>
-
 <div class="app">
 
-  <div class="header glass">
+  <div class="header">
     <div class="header-left">
       <div class="logo">
         <svg viewBox="0 0 22 22" fill="none">
@@ -327,7 +292,7 @@
     <div class="live-dot">Live</div>
   </div>
 
-  <div class="tabs glass">
+  <div class="tabs">
     <button class="tab active" onclick="switchTab('form', this)">Passation</button>
     <button class="tab" onclick="switchTab('history', this)">Historique</button>
     <button class="tab" onclick="switchTab('live', this)">Live</button>
@@ -349,7 +314,7 @@
         <div class="hero-step">Étape 1 · Shift</div>
         <div class="hero-title">Infos du<br><em>shift</em></div>
       </div>
-      <div class="astr-card glass-o">
+      <div class="astr-card">
         <div class="astr-label">Astreinte en cours</div>
         <div class="astr-main">
           <div>
@@ -361,7 +326,7 @@
           </div>
         </div>
       </div>
-      <div class="section glass">
+      <div class="section">
         <div class="row2">
           <div class="field">
             <label>Créneau <span class="required-star">*</span></label>
@@ -387,34 +352,28 @@
     <!-- STEP 2 -->
     <div id="step-2" class="hidden">
       <div class="hero anim">
-        <div class="hero-step">Étape 2 · Scooters</div>
-        <div class="hero-title">Offline<br><em>& RNU</em></div>
-        <div class="hero-desc">Confirme les scooters de la passation précédente et signale les nouveaux.</div>
+        <div class="hero-step">Étape 2 · Flotte</div>
+        <div class="hero-title">Statuts<br><em>flotte Atom</em></div>
+        <div class="hero-desc">Saisis les compteurs lus sur le dashboard Atom (More → statuts véhicules).</div>
       </div>
-      <div id="prev-offline-banner"></div>
-      <div class="section glass">
+      <div class="section">
         <div class="section-header">
           <div class="section-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-          <div><div class="section-title">Scooters offline</div></div>
+          <div><div class="section-title">Statuts véhicules</div><div class="section-sub">Nombre de véhicules par statut</div></div>
         </div>
-        <div id="scooters-list"></div>
-        <button class="add-btn" onclick="addScooter()">+ Ajouter un scooter offline</button>
-      </div>
-      <div class="section glass">
-        <div class="section-header">
-          <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div>
-          <div><div class="section-title">RNU</div><div class="section-sub">Running Non User</div></div>
+        <div class="fleet-grid" id="fleet-grid"></div>
+        <div class="vigilance-box">
+          <span>⚠️</span>
+          <span><b>CHARGING</b> déverrouille automatiquement le véhicule — vérifie avant toute manipulation terrain.</span>
         </div>
-        <div id="rnu-list"></div>
-        <button class="add-btn" onclick="addRNU()">+ Ajouter un scooter en RNU</button>
       </div>
-      <div class="section glass">
+      <div class="section">
         <div class="section-header">
-          <div class="section-icon" style="background:rgba(255,69,58,0.15)"><svg viewBox="0 0 24 24" stroke="#FF453A"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-          <div><div class="section-title" style="color:#FF453A">Accident</div><div class="section-sub">Signaler un incident utilisateur</div></div>
+          <div class="section-icon" style="background:var(--danger-d)"><svg viewBox="0 0 24 24" stroke="var(--danger)"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+          <div><div class="section-title" style="color:var(--danger)">Accident</div><div class="section-sub">Signaler un incident utilisateur</div></div>
         </div>
         <div id="accident-list"></div>
-        <button class="add-btn" style="border-color:rgba(255,69,58,0.3);color:rgba(255,100,90,0.9)" onclick="addAccident()">+ Signaler un accident</button>
+        <button class="add-btn" style="border-color:var(--danger);color:var(--danger)" onclick="addAccident()">+ Signaler un accident</button>
       </div>
       <div class="nav-btns">
         <button class="btn-prev" onclick="prevStep(2)">← Retour</button>
@@ -426,41 +385,46 @@
     <div id="step-3" class="hidden">
       <div class="hero anim">
         <div class="hero-step">Étape 3 · Statuts</div>
-        <div class="hero-title">VP, Reports<br><em>& Trips</em></div>
+        <div class="hero-title">ID verif, Damage<br><em>& Trips</em></div>
       </div>
-      <div class="section glass">
+      <div class="section">
         <div class="section-header">
           <div class="section-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div><div class="section-title">VP — Validation Pending</div></div>
+          <div><div class="section-title">ID verification</div><div class="section-sub">Traitée par Sumsub — rien à valider, juste à jour ou non</div></div>
         </div>
         <div class="field">
-          <label>À jour ? <span class="required-star">*</span></label>
+          <label>As-tu eu le temps de traiter les vérifications en attente ? <span class="required-star">*</span></label>
           <div class="status-row">
-            <button class="status-btn" id="vp-oui" onclick="setStatus('vp','oui')"><span class="ico">✓</span>Oui</button>
-            <button class="status-btn" id="vp-non" onclick="setStatus('vp','non')"><span class="ico">✗</span>Non</button>
+            <button class="status-btn" id="idv-oui" onclick="setStatus('idv','oui')"><span class="ico">✓</span>Oui</button>
+            <button class="status-btn" id="idv-non" onclick="setStatus('idv','non')"><span class="ico">✗</span>Non</button>
           </div>
-          <input type="hidden" id="vp-val" value="">
-          <div class="error-msg" id="err-vp">Merci de répondre</div>
-          <input type="text" id="vp-comment" placeholder="Commentaire (optionnel)">
+          <input type="hidden" id="idv-val" value="">
+          <div class="error-msg" id="err-idv">Merci de répondre</div>
+          <input type="text" id="idv-comment" placeholder="Commentaire (optionnel)">
         </div>
       </div>
-      <div class="section glass">
+      <div class="section">
         <div class="section-header">
           <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <div><div class="section-title">Reports</div></div>
+          <div><div class="section-title">Damage</div></div>
         </div>
         <div class="field">
-          <label>À jour ? <span class="required-star">*</span></label>
+          <label>As-tu eu le temps de traiter tous les damages ? <span class="required-star">*</span></label>
           <div class="status-row">
-            <button class="status-btn" id="rep-oui" onclick="setStatus('rep','oui')"><span class="ico">✓</span>Oui</button>
-            <button class="status-btn" id="rep-non" onclick="setStatus('rep','non')"><span class="ico">✗</span>Non</button>
+            <button class="status-btn" id="dmg-oui" onclick="setStatus('dmg','oui')"><span class="ico">✓</span>Oui</button>
+            <button class="status-btn" id="dmg-non" onclick="setStatus('dmg','non')"><span class="ico">✗</span>Non</button>
           </div>
-          <input type="hidden" id="rep-val" value="">
-          <div class="error-msg" id="err-rep">Merci de répondre</div>
-          <input type="text" id="rep-comment" placeholder="Commentaire (optionnel)">
+          <input type="hidden" id="dmg-val" value="">
+          <div class="error-msg" id="err-dmg">Merci de répondre</div>
+          <input type="text" id="dmg-comment" placeholder="Commentaire (optionnel)">
+        </div>
+        <div class="field">
+          <label>Damages ouverts actuellement (More → Damage reports, in review + approved)</label>
+          <input type="number" id="dmg-count" min="0" placeholder="Ex : 23" oninput="updateDamageDelta()">
+          <div class="dmg-delta" id="dmg-delta"></div>
         </div>
       </div>
-      <div class="section glass">
+      <div class="section">
         <div class="section-header">
           <div class="section-icon"><svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
           <div><div class="section-title">Trips longs</div></div>
@@ -487,7 +451,7 @@
         <div class="hero-title">Message<br><em>& Envoi</em></div>
       </div>
       <div id="prev-passation-wrap"></div>
-      <div class="section glass">
+      <div class="section">
         <div class="section-header">
           <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
           <div><div class="section-title">Message équipe</div></div>
@@ -496,7 +460,7 @@
           <textarea id="message" placeholder="Infos importantes, contexte..."></textarea>
         </div>
       </div>
-      <div class="section glass" id="recap-section">
+      <div class="section" id="recap-section">
         <div class="section-header">
           <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
           <div><div class="section-title">Récapitulatif</div></div>
@@ -542,11 +506,6 @@
         <button class="export-btn" id="export-btn" onclick="exportRapport()">Exporter</button>
       </div>
     </div>
-    <div class="filter-row">
-      <button class="filter-btn active" onclick="setFilter('tous',this)">Tous</button>
-      <button class="filter-btn" onclick="setFilter('en-cours',this)">En cours</button>
-      <button class="filter-btn" onclick="setFilter('resolu',this)">Résolus</button>
-    </div>
     <div id="rapport-content"><div class="loading">Chargement...</div></div>
   </div>
 
@@ -565,11 +524,20 @@
   </div>
 </div>
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyOUlWzv7JTmf5F0qjXYU3BBmnflnqRMhj7V3U9bY4vxK7YJtYNrZLs_ubA_er-sSTmTQ/exec";
-const ACTIONS = ["A garder a l'oeil", "A aller check sur place", "Contacter le dernier utilisateur", "Ramener a l'atelier", "Deja pris en charge"];
-const DUREE_OPTIONS = ["Moins d'1h", "1h a 3h", "3h a 6h", "Plus de 6h"];
-let sCount = 0, rCount = 0, currentStep = 1, rapportWeekOffset = 0;
-let _incidents = [], _activeFilter = 'tous';
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKJba0nS2cv4Et1vKUsMBQgPWb2HPtfHFgowUJl_-VK_z4pUFaUQNP-EuUN50fl9R1_w/exec";
+const FLEET_STATUSES = [
+  { key:'available', label:'Available', col:'Available' },
+  { key:'charging', label:'Charging', col:'Charging' },
+  { key:'discharged', label:'Discharged', col:'Discharged' },
+  { key:'needInvestigation', label:'Need investigation', col:'Need Investigation' },
+  { key:'maintenance', label:'Maintenance', col:'Maintenance' },
+  { key:'stolen', label:'Stolen', col:'Stolen' },
+  { key:'notReady', label:'Not ready', col:'Not Ready' },
+  { key:'rebalancing', label:'Rebalancing', col:'Rebalancing' }
+];
+let currentStep = 1, rapportWeekOffset = 0;
+let _prevPassation = null;
+let _rapportRows = [];
 
 // ─── PLANNING ───
 const TEAM = { 'Jerome':{tel:'06 21 94 86 56'}, 'Thierry':{tel:'06 51 67 06 76'}, 'Romain':{tel:'07 50 29 25 71'}, 'Antoine':{tel:'06 49 95 11 67'}, 'Martin':{tel:'06 51 57 88 73'} };
@@ -636,19 +604,10 @@ function goToStep(n) {
   }
   currentStep = n;
   window.scrollTo(0,0);
-  if (n === 2) loadPrevOfflines();
 }
 
 function nextStep(from) {
   if (!validateStep(from)) return;
-  if (from === 2) {
-    const noScooters = document.querySelectorAll('.scooter-item').length === 0;
-    const noRNU = document.querySelectorAll('.rnu-item').length === 0;
-    if (noScooters && noRNU) {
-      showModal("Aucun scooter offline et aucun RNU renseigné. Tu as bien vérifié toutes les villes, même hors Bordeaux ?", () => goToStep(3));
-      return;
-    }
-  }
   if (from === 3) buildRecap();
   goToStep(from+1);
 }
@@ -663,20 +622,9 @@ function validateStep(step) {
     if (!creneau) { showErr('creneau', true); ok=false; } else { showErr('creneau', false); }
     if (!creePar) { showErr('creePar', true); ok=false; } else { showErr('creePar', false); }
   }
-  if (step === 2) {
-    // Validate each scooter has at least a name
-    let scooterOk = true;
-    document.querySelectorAll('.scooter-item').forEach(el => {
-      const id = el.id.replace('sc-','');
-      const nom = document.getElementById('sc'+id+'-nom')?.value.trim();
-      if (!nom) { document.getElementById('sc'+id+'-nom').classList.add('invalid'); scooterOk=false; }
-      else { document.getElementById('sc'+id+'-nom').classList.remove('invalid'); }
-    });
-    if (!scooterOk) { showToast('Merci de renseigner le nom de chaque scooter.', 'error'); ok=false; }
-  }
   if (step === 3) {
-    if (!document.getElementById('vp-val').value) { showErr('vp', true); ok=false; } else { showErr('vp', false); }
-    if (!document.getElementById('rep-val').value) { showErr('rep', true); ok=false; } else { showErr('rep', false); }
+    if (!document.getElementById('idv-val').value) { showErr('idv', true); ok=false; } else { showErr('idv', false); }
+    if (!document.getElementById('dmg-val').value) { showErr('dmg', true); ok=false; } else { showErr('dmg', false); }
   }
   return ok;
 }
@@ -699,172 +647,88 @@ async function buildRecap() {
   const creneau = document.getElementById('creneau').value.trim();
   const creePar = document.getElementById('creePar').value;
   const astreinte = document.getElementById('astreinte-nom').textContent;
-  const scooters = collectScooters();
-  const rnus = collectRNU();
-  const vp = document.getElementById('vp-val').value;
-  const rep = document.getElementById('rep-val').value;
+  const fleet = collectFleet();
+  const idv = document.getElementById('idv-val').value;
+  const dmg = document.getElementById('dmg-val').value;
+  const dmgCount = document.getElementById('dmg-count').value;
   const trips = document.getElementById('trips-ok').checked ? 'OK' : 'A verifier';
 
-  let html = `<strong style="color:rgba(255,255,255,0.9)">${creePar}</strong> · ${creneau}<br>`;
-  html += `Astreinte : <strong style="color:#FF5500">${astreinte}</strong><br><br>`;
-  if (scooters.length > 0) {
-    html += `<strong style="color:rgba(255,255,255,0.9)">${scooters.length} scooter(s) offline</strong><br>`;
-    scooters.forEach(s => {
-      const typeLabel = s.type==='batterie'?'🔋':s.type==='session'?'🚨':s.type==='offline'?'⚡':'';
-      html += `&bull; ${typeLabel} ${s.nom}${s.actions.length>0?' — '+s.actions.join(', '):''}${s.depuis?' ('+s.depuis+')':''}<br>`;
-    });
-    html += '<br>';
-  } else { html += `<span style="color:#30D158">Aucun scooter offline</span><br><br>`; }
-  if (rnus.length > 0) html += `RNU : ${rnus.map(r=>r.nom).join(', ')}<br><br>`;
+  let html = `<strong style="color:var(--ink)">${creePar}</strong> · ${creneau}<br>`;
+  html += `Astreinte : <strong style="color:var(--accent)">${astreinte}</strong><br><br>`;
+  html += `<strong style="color:var(--ink)">Statuts flotte</strong><br>`;
+  FLEET_STATUSES.forEach(s => { html += `&bull; ${s.label} : <strong>${fleet[s.key]}</strong><br>`; });
+  html += '<br>';
   const accidents = collectAccidents();
   if (accidents.length > 0) {
-    html += `<strong style="color:#FF453A">⚠️ ${accidents.length} accident(s)</strong><br>`;
+    html += `<strong style="color:var(--danger)">⚠️ ${accidents.length} accident(s)</strong><br>`;
     accidents.forEach(a => { html += `&bull; ${a.nom}${a.userid?' · '+a.userid:''}${a.lieu?' · '+a.lieu:''}${a.garage?' · Ramener au garage':''}<br>`; });
     html += '<br>';
   }
-  html += `VP : <strong style="color:${vp==='oui'?'#30D158':'#FF453A'}">${vp==='oui'?'A jour':'Non a jour'}</strong> &nbsp; Reports : <strong style="color:${rep==='oui'?'#30D158':'#FF453A'}">${rep==='oui'?'A jour':'Non a jour'}</strong> &nbsp; Trips : <strong>${trips}</strong>`;
+  html += `ID verification : <strong style="color:${idv==='oui'?'var(--ok)':'var(--danger)'}">${idv==='oui'?'A jour':'Non a jour'}</strong><br>`;
+  html += `Damage : <strong style="color:${dmg==='oui'?'var(--ok)':'var(--danger)'}">${dmg==='oui'?'A jour':'Non a jour'}</strong> &nbsp; Ouverts : <strong>${dmgCount||0}</strong>${_prevPassation&&_prevPassation['Damages Open']!==undefined?' '+formatDelta(damageDelta()):''}<br>`;
+  html += `Trips : <strong>${trips}</strong>`;
   document.getElementById('recap-content').innerHTML = html;
 
-  // Load previous passation
+  // Contexte de la passation précédente
+  if (_prevPassation) {
+    const prev = _prevPassation;
+    const prevDate = new Date(prev.Date);
+    const prevDateStr = isNaN(prevDate) ? '' : prevDate.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const prevCreneau = prev['Créneau']&&!prev['Créneau'].includes('T22:00')&&!prev['Créneau'].includes('T00:00') ? prev['Créneau'] : '';
+    let prevHtml = `<div class="prev-recap-title">Passation précédente · ${prevDateStr}${prevCreneau?' · '+prevCreneau:''} · par ${prev['Créé par']||'—'}</div>`;
+    prevHtml += `<div class="prev-recap-content">`;
+    FLEET_STATUSES.forEach(s => { prevHtml += `${s.label} : <strong>${prev[s.col]??'—'}</strong> &nbsp;`; });
+    prevHtml += `<br>ID verification : <strong>${prev['ID Verification']==='oui'?'A jour':'Non a jour'}</strong> &nbsp; Damage : <strong>${prev.Damage==='oui'?'A jour':'Non a jour'}</strong> (${prev['Damages Open']??'—'} ouverts) &nbsp; Trips : <strong>${prev.TripsOk==='Oui'?'OK':'A verifier'}</strong>`;
+    prevHtml += `</div>`;
+    document.getElementById('prev-passation-wrap').innerHTML = `<div class="prev-recap">${prevHtml}</div>`;
+  }
+}
+
+// ─── FLEET STATUS GRID ───
+function initFleetGrid() {
+  const grid = document.getElementById('fleet-grid');
+  grid.innerHTML = FLEET_STATUSES.map(s => `
+    <div class="fleet-cell">
+      <label>${s.label}</label>
+      <input type="number" min="0" id="fleet-${s.key}" value="0">
+    </div>`).join('');
+}
+
+function collectFleet() {
+  const out = {};
+  FLEET_STATUSES.forEach(s => { out[s.key] = parseInt(document.getElementById('fleet-'+s.key)?.value, 10) || 0; });
+  return out;
+}
+
+// ─── DAMAGE DELTA ───
+async function loadPrevPassation() {
   try {
     const res = await fetch(SCRIPT_URL + '?action=getPassations');
     const data = await res.json();
     const passations = (data.passations || []).sort((a,b) => new Date(b.Date) - new Date(a.Date));
-    if (passations.length > 0) {
-      const prev = passations[0];
-      const prevDate = new Date(prev.Date);
-      const prevDateStr = isNaN(prevDate) ? '' : prevDate.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-      const prevCreneau = prev['Créneau']&&!prev['Créneau'].includes('T22:00')&&!prev['Créneau'].includes('T00:00') ? prev['Créneau'] : '';
-
-      // Get prev scooters
-      const scRes = await fetch(SCRIPT_URL + '?action=getScooters');
-      const scData = await scRes.json();
-      const prevScooters = (scData.scooters||[]).filter(s => s.ID_Passation === prev.ID);
-      const currentNoms = scooters.map(s => s.nom.trim().toLowerCase());
-      const prevNoms = prevScooters.map(s => (s.Nom||'').trim().toLowerCase());
-
-      let prevHtml = `<div class="prev-recap-title">Passation précédente · ${prevDateStr}${prevCreneau?' · '+prevCreneau:''} · par ${prev['Créé par']||'—'}</div>`;
-      prevHtml += `<div class="prev-recap-content">`;
-
-      if (prevScooters.length > 0) {
-        prevHtml += `<strong>${prevScooters.length} scooter(s) offline :</strong><br>`;
-        prevScooters.forEach(s => {
-          const nom = s.Nom || '—';
-          const stillHere = currentNoms.includes(nom.trim().toLowerCase());
-          const cls = stillHere ? 'diff-same' : 'diff-gone';
-          const tag = stillHere ? '(toujours offline)' : '(resolu)';
-          prevHtml += `<span class="${cls}">&bull; ${nom} ${tag}${s.Loc2hire?' · '+s.Loc2hire:''}</span><br>`;
-        });
-        // New scooters not in previous
-        const newOnes = scooters.filter(s => !prevNoms.includes(s.nom.trim().toLowerCase()));
-        if (newOnes.length > 0) {
-          newOnes.forEach(s => {
-            prevHtml += `<span class="diff-new">&bull; ${s.nom} (nouveau)</span><br>`;
-          });
-        }
-      } else {
-        prevHtml += `<span class="diff-same">Aucun scooter offline</span><br>`;
-        if (scooters.length > 0) {
-          scooters.forEach(s => { prevHtml += `<span class="diff-new">&bull; ${s.nom} (nouveau)</span><br>`; });
-        }
-      }
-
-      prevHtml += `<br>VP : <strong>${prev.VP==='oui'?'A jour':'Non a jour'}</strong> &nbsp; Reports : <strong>${prev.Reports==='oui'?'A jour':'Non a jour'}</strong> &nbsp; Trips : <strong>${prev.TripsOk==='Oui'?'OK':'A verifier'}</strong>`;
-      prevHtml += `</div>`;
-      document.getElementById('prev-passation-wrap').innerHTML = `<div class="prev-recap">${prevHtml}</div>`;
-    }
-  } catch(e) { /* silently fail */ }
+    _prevPassation = passations[0] || null;
+  } catch(e) { _prevPassation = null; }
 }
 
-// ─── SCOOTERS ───
-function addScooter(prefill={}) {
-  const id = ++sCount;
-  const div = document.createElement('div');
-  div.className = 'scooter-item'; div.id = 'sc-'+id;
-  const actionChecks = ACTIONS.map((a,i) =>
-    `<label class="action-check" id="ac-${id}-${i}">
-      <input type="checkbox" id="sc${id}-action-${i}" onchange="toggleActionCheck(${id},${i})"${prefill.actions&&prefill.actions.includes(a)?' checked':''}> <span>${a}</span>
-    </label>`
-  ).join('');
-  const selBat = prefill.type==='batterie' ? 'sel-bat' : '';
-  const selOff = prefill.type==='offline' ? 'sel-offline' : '';
-  const selSes = prefill.type==='session' ? 'sel-session' : '';
-  div.innerHTML = `
-    <span class="item-label">Scooter ${id}</span>
-    <button class="remove-btn" onclick="removeEl('sc-${id}')">×</button>
-    <div class="field" style="margin-bottom:11px">
-      <label>Type d'offline <span class="required-star">*</span></label>
-      <input type="hidden" id="sc${id}-type" value="${prefill.type||''}">
-      <div class="offline-type-row">
-        <button type="button" class="ot-btn ${selBat}" onclick="setOfflineType(${id},'batterie',this)">
-          <span class="ot-icon">🔋</span>Batterie vide
-        </button>
-        <button type="button" class="ot-btn ${selOff}" onclick="setOfflineType(${id},'offline',this)">
-          <span class="ot-icon">⚡</span>Offline (batterie ok)
-        </button>
-        <button type="button" class="ot-btn ${selSes}" onclick="setOfflineType(${id},'session',this)">
-          <span class="ot-icon">🚨</span>Session en cours — urgent
-        </button>
-      </div>
-    </div>
-    <div class="row2" style="margin-bottom:10px">
-      <div class="field">
-        <label>Nom du scoot <span class="required-star">*</span></label>
-        <input type="text" id="sc${id}-nom" placeholder="Ex : BX-123" value="${prefill.nom||''}">
-      </div>
-      <div class="field">
-        <label>Offline depuis</label>
-        <select id="sc${id}-depuis">
-          <option value="">-- Choisir --</option>
-          ${DUREE_OPTIONS.map(o=>`<option value="${o}"${prefill.depuis===o?' selected':''}>${o}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    <div class="row2" style="margin-bottom:10px">
-      <div class="field"><label>Localisation 2hire</label><input type="text" id="sc${id}-loc2hire" placeholder="Ex : Rue Victor Hugo" value="${prefill.loc2hire||''}"></div>
-      <div class="field"><label>Localisation utilisateur</label><input type="text" id="sc${id}-locuser" placeholder="Si contacté au tél..." value="${prefill.locuser||''}"></div>
-    </div>
-    <div class="row2" style="margin-bottom:10px">
-      <div class="field"><label>Batterie %</label><input type="number" id="sc${id}-bat" placeholder="15" min="0" max="100" value="${prefill.batterie||''}"></div>
-      <div class="field"></div>
-    </div>
-    <div class="field">
-      <label>Actions à mener</label>
-      <div class="action-checks">${actionChecks}</div>
-    </div>`;
-  document.getElementById('scooters-list').appendChild(div);
-  // re-apply checked state for prefilled actions
-  if (prefill.actions) {
-    ACTIONS.forEach((a,i) => {
-      if (prefill.actions.includes(a)) toggleActionCheck(id, i);
-    });
-  }
-  if (prefill.type) {
-    const btn = div.querySelector(`.ot-btn.${prefill.type==='batterie'?'sel-bat':prefill.type==='offline'?'sel-offline':'sel-session'}`);
-  }
+function damageDelta() {
+  const val = parseInt(document.getElementById('dmg-count').value, 10);
+  const prevVal = _prevPassation ? parseInt(_prevPassation['Damages Open'], 10) : NaN;
+  if (isNaN(val) || !_prevPassation || isNaN(prevVal)) return null;
+  return val - prevVal;
 }
 
-function setOfflineType(scooterId, type, btn) {
-  document.getElementById(`sc${scooterId}-type`).value = type;
-  const row = btn.closest('.offline-type-row');
-  row.querySelectorAll('.ot-btn').forEach(b => b.className = 'ot-btn');
-  btn.classList.add(type==='batterie'?'sel-bat':type==='offline'?'sel-offline':'sel-session');
+function formatDelta(delta) {
+  if (delta === null) return '';
+  if (delta === 0) return '(=)';
+  return delta > 0 ? `(+${delta})` : `(${delta})`;
 }
 
-function toggleActionCheck(scooterId, actionIdx) {
-  const checked = document.getElementById(`sc${scooterId}-action-${actionIdx}`).checked;
-  document.getElementById(`ac-${scooterId}-${actionIdx}`).classList.toggle('checked', checked);
-}
-
-function addRNU() {
-  const id = ++rCount;
-  const div = document.createElement('div');
-  div.className = 'rnu-item'; div.id = 'rn-'+id;
-  div.innerHTML = `
-    <span class="item-label">RNU ${id}</span>
-    <button class="remove-btn" onclick="removeEl('rn-${id}')">×</button>
-    <div class="field"><label>Nom du scoot <span class="required-star">*</span></label><input type="text" id="rn${id}-nom" placeholder="Ex : BX-456"></div>`;
-  document.getElementById('rnu-list').appendChild(div);
+function updateDamageDelta() {
+  const el = document.getElementById('dmg-delta');
+  const delta = damageDelta();
+  if (delta === null) { el.textContent = ''; el.className = 'dmg-delta'; return; }
+  el.textContent = (delta>0?`+${delta}`:delta) + ' vs passation précédente';
+  el.className = 'dmg-delta ' + (delta>0?'delta-up':delta<0?'delta-down':'delta-flat');
 }
 
 function removeEl(id) { const el=document.getElementById(id); if(el) el.remove(); }
@@ -878,24 +742,6 @@ function setStatus(key, val) {
 
 function toggleTrips() {
   document.getElementById('trips-detail').classList.toggle('hidden', document.getElementById('trips-ok').checked);
-}
-
-// Créneau "autre"
-function collectScooters() {
-  return Array.from(document.querySelectorAll('.scooter-item')).map(el => {
-    const id = el.id.replace('sc-','');
-    const actions = ACTIONS.filter((_,i) => document.getElementById(`sc${id}-action-${i}`)?.checked);
-    return {
-      nom: document.getElementById('sc'+id+'-nom')?.value||'',
-      loc2hire: document.getElementById('sc'+id+'-loc2hire')?.value||'',
-      locuser: document.getElementById('sc'+id+'-locuser')?.value||'',
-      batterie: document.getElementById('sc'+id+'-bat')?.value||'',
-      depuis: document.getElementById('sc'+id+'-depuis')?.value||'',
-      type: document.getElementById('sc'+id+'-type')?.value||'',
-      actions,
-      action: actions.join(' / ')
-    };
-  });
 }
 
 // ─── ACCIDENTS ───
@@ -949,13 +795,6 @@ function collectAccidents() {
   });
 }
 
-function collectRNU() {
-  return Array.from(document.querySelectorAll('.rnu-item')).map(el => {
-    const id = el.id.replace('rn-','');
-    return { nom: document.getElementById('rn'+id+'-nom')?.value||'' };
-  });
-}
-
 function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent=msg; t.className='toast '+type; t.style.display='block';
@@ -972,14 +811,16 @@ async function submitPassation() {
   const payload = {
     action:'addPassation', date:new Date().toISOString(), creneau,
     ville:'Bordeaux', astreinte, creePar,
-    vp:document.getElementById('vp-val').value,
-    vpComment:document.getElementById('vp-comment').value,
-    reports:document.getElementById('rep-val').value,
-    reportsComment:document.getElementById('rep-comment').value,
+    ...collectFleet(),
+    idVerification:document.getElementById('idv-val').value,
+    idVerificationComment:document.getElementById('idv-comment').value,
+    damage:document.getElementById('dmg-val').value,
+    damageComment:document.getElementById('dmg-comment').value,
+    damagesOpen:document.getElementById('dmg-count').value,
     tripsOk:tripsOk?'Oui':'Non',
     tripsDetail:tripsOk?'':document.getElementById('trips-text').value,
     message:document.getElementById('message').value,
-    scooters:collectScooters(), rnu:collectRNU(), accidents:collectAccidents()
+    accidents:collectAccidents()
   };
   try {
     await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload),mode:'no-cors'});
@@ -990,22 +831,22 @@ async function submitPassation() {
 }
 
 function resetForm() {
-  ['creePar','creneau','message','vp-comment','rep-comment','trips-text'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['creePar','creneau','message','idv-comment','dmg-comment','dmg-count','trips-text'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('prev-passation-wrap').innerHTML='';
-  document.getElementById('prev-offline-banner').innerHTML='';
-  document.getElementById('scooters-list').innerHTML='';
-  document.getElementById('rnu-list').innerHTML='';
+  document.getElementById('dmg-delta').textContent='';
+  initFleetGrid();
   document.getElementById('trips-ok').checked=false;
   document.getElementById('trips-detail').classList.remove('hidden');
-  ['vp-val','rep-val'].forEach(id=>document.getElementById(id).value='');
-  ['vp-oui','vp-non','rep-oui','rep-non'].forEach(id=>document.getElementById(id).className='status-btn');
+  ['idv-val','dmg-val'].forEach(id=>document.getElementById(id).value='');
+  ['idv-oui','idv-non','dmg-oui','dmg-non'].forEach(id=>document.getElementById(id).className='status-btn');
   document.getElementById('accident-list').innerHTML='';
-  aCount=0; sCount=0; rCount=0;
+  aCount=0;
+  loadPrevPassation();
   goToStep(1);
 }
 
 // ─── WHATSAPP ───
-function buildWhatsAppText(p, scooters, rnus) {
+function buildWhatsAppText(p, prevP) {
   const date = new Date(p.Date);
   const dateStr = isNaN(date)?p.Date:date.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const creneau = p['Créneau']&&!p['Créneau'].includes('T22:00')&&!p['Créneau'].includes('T00:00')?p['Créneau']:'';
@@ -1018,34 +859,32 @@ function buildWhatsAppText(p, scooters, rnus) {
   t+=`${dateStr}${creneau?' - '+creneau:''}\n`;
   t+=`Par : ${p['Créé par']||'—'}  |  Astreinte : ${astrText}\n`;
   t+=sep;
-  if (scooters.length>0) {
-    t+=`SCOOTERS OFFLINE (${scooters.length})\n`;
-    scooters.forEach(s=>{
-      t+=`\n- ${s.Nom||'—'}\n`;
-      if(s.Loc2hire) t+=`  > 2hire : ${s.Loc2hire}\n`;
-      if(s.LocUser) t+=`  > Utilisateur : ${s.LocUser}\n`;
-      if(s.Batterie) t+=`  > Batterie : ${s.Batterie}%\n`;
-      if(s.Depuis) t+=`  > Offline depuis : ${s.Depuis}\n`;
-      if(s.Action) t+=`  > Actions : ${s.Action}\n`;
-    });
-    t+='\n';
-  } else { t+=`Aucun scooter offline\n`; }
-  if(rnus.length>0){t+=sep;t+=`RNU : ${rnus.map(r=>r.Nom||'—').join(' - ')}\n`;}
+  t+=`STATUTS FLOTTE\n`;
+  const maxLabelLen = Math.max(...FLEET_STATUSES.map(s=>s.label.length));
+  FLEET_STATUSES.forEach(s => { t += `${s.label.padEnd(maxLabelLen+2,' ')}: ${p[s.col]??'—'}\n`; });
   t+=sep;
-  t+=`STATUTS\n`;
-  t+=`VP      : ${p.VP==='oui'?'A jour':'Non a jour'}${p['VP Comment']?' ('+p['VP Comment']+')':''}\n`;
-  t+=`Reports : ${p.Reports==='oui'?'A jour':'Non a jour'}${p['Reports Comment']?' ('+p['Reports Comment']+')':''}\n`;
-  t+=`Trips   : ${p.TripsOk==='Oui'?'OK':'A verifier'}${p['Trips Detail']?' - '+p['Trips Detail']:''}\n`;
+  t+=`ID VERIFICATION\n`;
+  t+=`A jour : ${p['ID Verification']==='oui'?'Oui':'Non'}${p['ID Verification Comment']?' ('+p['ID Verification Comment']+')':''}\n`;
+  t+=sep;
+  t+=`DAMAGE\n`;
+  t+=`A jour : ${p.Damage==='oui'?'Oui':'Non'}${p['Damage Comment']?' ('+p['Damage Comment']+')':''}\n`;
+  if (p['Damages Open']!==undefined && p['Damages Open']!=='') {
+    const prevCount = prevP ? parseInt(prevP['Damages Open'], 10) : NaN;
+    const delta = (prevP && !isNaN(prevCount)) ? parseInt(p['Damages Open'],10)-prevCount : null;
+    t += `Ouverts actuellement : ${p['Damages Open']}${delta!==null&&!isNaN(delta)?' ('+(delta>0?'+':'')+delta+' vs passation précédente)':''}\n`;
+  }
+  if (p.TripsOk==='Non' && p['Trips Detail']) { t+=sep; t+=`TRIPS LONGS\n${p['Trips Detail']}\n`; }
   if(p.Message){t+=sep;t+=`${p.Message}\n`;}
   return t;
 }
 
 function sendToWhatsApp(passationId) {
-  const p=(window._passations||[]).find(x=>x.ID===passationId);
-  const scooters=(window._scooters||[]).filter(s=>s.ID_Passation===passationId);
-  const rnus=(window._rnus||[]).filter(r=>r.ID_Passation===passationId);
+  const list = window._passations||[]; // trié du plus récent au plus ancien
+  const idx = list.findIndex(x=>x.ID===passationId);
+  const p = list[idx];
+  const prevP = list[idx+1];
   if(!p) return;
-  window.open('https://wa.me/?text='+encodeURIComponent(buildWhatsAppText(p,scooters,rnus)),'_blank');
+  window.open('https://wa.me/?text='+encodeURIComponent(buildWhatsAppText(p,prevP)),'_blank');
 }
 
 // ─── LIVE ───
@@ -1056,135 +895,72 @@ async function loadLive() {
   content.innerHTML = '<div class="loading">Chargement...</div>';
 
   try {
-    const [r1, r2, r3] = await Promise.all([
-      fetch(SCRIPT_URL + '?action=getPassations'),
-      fetch(SCRIPT_URL + '?action=getScooters'),
-      fetch(SCRIPT_URL + '?action=getRNU')
-    ]);
-    const [d1, d2, d3] = await Promise.all([r1.json(), r2.json(), r3.json()]);
-    const allPassations = (d1.passations||[]).sort((a,b) => new Date(a.Date)-new Date(b.Date));
-    const allScooters = d2.scooters||[];
-    const allRnus = d3.rnu||[];
-
-    // Tous les incidents non résolus — quelle que soit leur date
-    const incidents = buildIncidents(allPassations, allScooters);
-    const currentlyOffline = incidents.filter(i => i.statut === 'en-cours');
-    currentlyOffline.sort((a,b) => b.dureeMs - a.dureeMs);
-
-    // RNU : tous les noms qui apparaissent dans une passation mais pas dans une passation suivante sans eux
-    const rnuMap = {};
-    allPassations.forEach(p => {
-      const pRnus = allRnus.filter(r => r.ID_Passation === p.ID);
-      pRnus.forEach(r => { if (r.Nom) rnuMap[r.Nom] = { nom: r.Nom, date: p.Date, par: p['Créé par'] }; });
-    });
-    // Un RNU est "en cours" si son nom apparaît dans la dernière passation qui le mentionne
-    // et n'apparaît dans aucune passation APRÈS sans lui. Simplifié : on prend tous les RNU uniques des 3 dernières passations
-    const lastPasses = allPassations.slice(-3);
-    const activeRnus = [];
-    const seenRnu = new Set();
-    [...lastPasses].reverse().forEach(p => {
-      allRnus.filter(r => r.ID_Passation === p.ID).forEach(r => {
-        if (r.Nom && !seenRnu.has(r.Nom)) {
-          seenRnu.add(r.Nom);
-          activeRnus.push({ nom: r.Nom, date: p.Date, par: p['Créé par'] });
-        }
-      });
-    });
-
-    // Dernière passation pour contexte
+    const res = await fetch(SCRIPT_URL + '?action=getPassations');
+    const data = await res.json();
+    const allPassations = (data.passations||[]).sort((a,b) => new Date(a.Date)-new Date(b.Date));
     const lastPass = allPassations[allPassations.length - 1];
+    const prevPass = allPassations[allPassations.length - 2];
     const lastPassDate = lastPass ? new Date(lastPass.Date) : null;
     const lastPassStr = lastPassDate && !isNaN(lastPassDate) ? lastPassDate.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
 
-    // Astreinte
     const astreinte = getAstreinte(new Date());
-
     const now = new Date();
     document.getElementById('live-updated').textContent = 'Mis à jour ' + now.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-
-    const getDurationLevel = ms => { const h=ms/3600000; if(h>8)return 'critical'; if(h>3)return 'warn'; return 'ok'; };
-    const getDurationClass = ms => { const l=getDurationLevel(ms); return l==='critical'?'duration-critical':l==='warn'?'duration-warn':'duration-ok'; };
-    const getCardClass = ms => { const l=getDurationLevel(ms); return l==='critical'?'level-critical':l==='warn'?'level-warn':'level-ok'; };
-
-    const criticalCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs)==='critical').length;
-    const warnCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs)==='warn').length;
-    const okCount = currentlyOffline.filter(i => getDurationLevel(i.dureeMs)==='ok').length;
 
     let html = '';
 
     // Astreinte
-    html += `<div class="astr-card glass-o" style="border-radius:var(--r2);padding:1.1rem 1.4rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:12px">
+    html += `<div class="astr-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div>
-        <div style="font-size:10px;font-weight:500;color:rgba(255,190,120,0.65);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px">Astreinte en cours</div>
-        <div style="font-size:30px;font-weight:700;color:white;letter-spacing:-0.8px;line-height:1">${astreinte?.nom || '—'}</div>
-        <div style="font-size:14px;color:rgba(255,255,255,0.55);margin-top:3px;font-family:var(--mono)">${astreinte?.tel ? astreinte.tel.replace(/(\d{2})(?=\d)/g,'$1 ').trim() : '—'}</div>
+        <div class="astr-label">Astreinte en cours</div>
+        <div class="astr-name">${astreinte?.nom || '—'}</div>
+        <div class="astr-tel">${astreinte?.tel ? astreinte.tel.replace(/(\d{2})(?=\d)/g,'$1 ').trim() : '—'}</div>
       </div>
-      <div style="width:46px;height:46px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.16);flex-shrink:0">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,190,120,0.85)" stroke-width="1.7" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>
+      <div class="astr-circle">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>
       </div>
     </div>`;
+
+    if (!lastPass) {
+      html += `<div class="live-empty">Aucune passation enregistrée</div>`;
+      content.innerHTML = html;
+      btn.classList.remove('spinning');
+      return;
+    }
 
     // Dernière passation
-    if (lastPass) {
-      const vpOk = lastPass.VP === 'oui';
-      const repOk = lastPass.Reports === 'oui';
-      const tripsOk = lastPass.TripsOk === 'Oui';
-      html += `<div class="glass" style="border-radius:var(--r2);padding:1rem 1.25rem;margin-bottom:1.25rem">
-        <div style="font-size:10px;font-weight:500;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">Dernière passation · ${lastPassStr} · ${lastPass['Créé par']||'—'}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;background:${vpOk?'rgba(48,209,88,0.12)':'rgba(255,69,58,0.11)'};color:${vpOk?'#30D158':'#FF453A'};border:1px solid ${vpOk?'rgba(48,209,88,0.22)':'rgba(255,69,58,0.22)'}">VP ${vpOk?'ok':'NOK'}</span>
-          <span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;background:${repOk?'rgba(48,209,88,0.12)':'rgba(255,69,58,0.11)'};color:${repOk?'#30D158':'#FF453A'};border:1px solid ${repOk?'rgba(48,209,88,0.22)':'rgba(255,69,58,0.22)'}">Reports ${repOk?'ok':'NOK'}</span>
-          <span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;background:${tripsOk?'rgba(48,209,88,0.12)':'rgba(255,214,10,0.1)'};color:${tripsOk?'#30D158':'#FFD60A'};border:1px solid ${tripsOk?'rgba(48,209,88,0.22)':'rgba(255,214,10,0.25)'}">Trips ${tripsOk?'ok':'à vérifier'}</span>
-        </div>
-        ${lastPass.Message ? `<div style="font-size:13px;color:rgba(255,255,255,0.45);margin-top:8px;font-weight:300;border-left:2px solid var(--o);padding-left:10px">${lastPass.Message}</div>` : ''}
-      </div>`;
-    }
-
-    // Stats
-    html += `<div class="live-stat-row">
-      <div class="live-stat glass"><div class="live-stat-num" style="color:#FF453A">${criticalCount}</div><div class="live-stat-label">Critique +8h</div></div>
-      <div class="live-stat glass"><div class="live-stat-num" style="color:#FFD60A">${warnCount}</div><div class="live-stat-label">3–8h</div></div>
-      <div class="live-stat glass"><div class="live-stat-num" style="color:#30D158">${okCount}</div><div class="live-stat-label">Récent -3h</div></div>
+    const idvOk = lastPass['ID Verification'] === 'oui';
+    const dmgOk = lastPass.Damage === 'oui';
+    const tripsOk = lastPass.TripsOk === 'Oui';
+    html += `<div class="section" style="margin-bottom:1.25rem">
+      <div class="live-title-text" style="margin-bottom:8px">Dernière passation · ${lastPassStr} · ${lastPass['Créé par']||'—'}</div>
+      <div class="pills" style="margin-bottom:0">
+        <span class="pill ${idvOk?'pill-ok':'pill-nok'}">ID verif ${idvOk?'ok':'NOK'}</span>
+        <span class="pill ${dmgOk?'pill-ok':'pill-nok'}">Damage ${dmgOk?'ok':'NOK'}</span>
+        <span class="pill ${tripsOk?'pill-ok':'pill-nok'}">Trips ${tripsOk?'ok':'à vérifier'}</span>
+      </div>
+      ${lastPass.Message ? `<div style="font-size:13px;color:var(--ink-dim);margin-top:10px;border-left:2px solid var(--accent);padding-left:10px">${lastPass.Message}</div>` : ''}
     </div>`;
 
-    // Offline
-    html += `<div class="live-section-title">Scooters offline <span class="live-section-count">${currentlyOffline.length}</span></div>`;
-    if (!currentlyOffline.length) {
-      html += `<div class="live-empty glass">Aucun scooter offline en ce moment</div>`;
-    } else {
-      currentlyOffline.forEach(inc => {
-        const dureeStr = formatDuree(inc.dureeMs);
-        const scooterEntries = allScooters.filter(s => s.Nom === inc.nom);
-        const latest = scooterEntries[scooterEntries.length-1] || {};
-        const actions = inc.action ? inc.action.split(' / ').filter(Boolean) : [];
-        const fmtDebut = inc.dateDebut instanceof Date && !isNaN(inc.dateDebut) ? inc.dateDebut.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
-        html += `<div class="offline-card ${getCardClass(inc.dureeMs)}">
-          <div class="offline-card-top">
-            <div class="offline-card-nom">${inc.nom}</div>
-            <div class="offline-duration ${getDurationClass(inc.dureeMs)}">${dureeStr}</div>
-          </div>
-          <div class="offline-card-details">
-            ${latest.Loc2hire?`<strong>2hire :</strong> ${latest.Loc2hire}<br>`:''}
-            ${latest.LocUser?`<strong>Utilisateur :</strong> ${latest.LocUser}<br>`:''}
-            ${latest.Batterie?`<strong>Batterie :</strong> ${latest.Batterie}%<br>`:''}
-            <strong>Depuis :</strong> ${fmtDebut} · Signalé ${inc.nbPassations}× · ${inc.par}
-          </div>
-          ${actions.length?`<div class="offline-card-actions">${actions.map(a=>`<span class="action-tag">${a}</span>`).join('')}</div>`:''}
-        </div>`;
-      });
-    }
+    // Damages
+    const dmgCountRaw = lastPass['Damages Open'];
+    const dmgCount = parseInt(dmgCountRaw, 10);
+    const dmgPrev = prevPass ? parseInt(prevPass['Damages Open'], 10) : NaN;
+    const dmgDelta = (!isNaN(dmgCount) && !isNaN(dmgPrev)) ? dmgCount - dmgPrev : null;
+    html += `<div class="live-section-title">Damages ouverts</div>
+    <div class="section" style="margin-bottom:1.25rem;display:flex;align-items:baseline;justify-content:space-between">
+      <div class="live-stat-num" style="font-size:32px">${isNaN(dmgCount)?'—':dmgCount}</div>
+      <div style="font-size:13px;font-family:var(--mono);color:${dmgDelta>0?'var(--danger)':dmgDelta<0?'var(--ok)':'var(--ink-dim)'}">${dmgDelta===null?'':formatDelta(dmgDelta)+' vs passation précédente'}</div>
+    </div>`;
 
-    // RNU
-    html += `<div class="live-section-title" style="margin-top:1rem">RNU en cours <span class="live-section-count">${activeRnus.length}</span></div>`;
-    if (!activeRnus.length) {
-      html += `<div class="live-empty glass">Aucun RNU en ce moment</div>`;
-    } else {
-      activeRnus.forEach(r => {
-        const d = new Date(r.date);
-        const ds = isNaN(d)?'':d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-        html += `<div class="rnu-card"><div class="rnu-card-nom">${r.nom}</div><div class="rnu-card-meta">${ds} · ${r.par}</div></div>`;
-      });
-    }
+    // Statuts flotte
+    html += `<div class="live-section-title">Statuts flotte <span class="live-section-count">${lastPassStr}</span></div>`;
+    html += `<div class="live-stat-row">${FLEET_STATUSES.map(s => {
+      const val = lastPass[s.col];
+      const prevVal = prevPass ? parseInt(prevPass[s.col], 10) : NaN;
+      const delta = (val!==undefined && !isNaN(prevVal)) ? parseInt(val,10)-prevVal : null;
+      return `<div class="live-stat"><div class="live-stat-num">${val??'—'}</div><div class="live-stat-label">${s.label}</div>${delta!==null&&!isNaN(delta)?`<div class="live-stat-delta" style="color:${delta>0?'var(--warn)':delta<0?'var(--ok)':'var(--ink-dim)'}">${formatDelta(delta)}</div>`:''}</div>`;
+    }).join('')}</div>`;
 
     content.innerHTML = html;
   } catch(e) {
@@ -1198,35 +974,30 @@ async function loadHistory() {
   const list=document.getElementById('history-list');
   list.innerHTML='<div class="loading">Chargement...</div>';
   try {
-    const [r1,r2,r3]=await Promise.all([fetch(SCRIPT_URL+'?action=getPassations'),fetch(SCRIPT_URL+'?action=getScooters'),fetch(SCRIPT_URL+'?action=getRNU')]);
-    const [d1,d2,d3]=await Promise.all([r1.json(),r2.json(),r3.json()]);
-    const passations=(d1.passations||[]).reverse();
-    window._passations=passations; window._scooters=d2.scooters||[]; window._rnus=d3.rnu||[];
+    const res=await fetch(SCRIPT_URL+'?action=getPassations');
+    const data=await res.json();
+    const passations=(data.passations||[]).sort((a,b)=>new Date(b.Date)-new Date(a.Date));
+    window._passations=passations;
     if(!passations.length){list.innerHTML='<div class="empty">Aucune passation trouvée.</div>';return;}
     list.innerHTML=passations.map(p=>{
       const date=new Date(p.Date);
       const dateStr=isNaN(date)?p.Date:date.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
       const creneau=p['Créneau']&&!p['Créneau'].includes('T22:00')&&!p['Créneau'].includes('T00:00')?p['Créneau']:'';
-      const vpPill=p.VP?`<span class="pill ${p.VP==='oui'?'pill-ok':'pill-nok'}">${p.VP==='oui'?'VP ok':'VP NOK'}</span>`:'';
-      const repPill=p.Reports?`<span class="pill ${p.Reports==='oui'?'pill-ok':'pill-nok'}">${p.Reports==='oui'?'Reports ok':'Reports NOK'}</span>`:'';
+      const idvPill=p['ID Verification']?`<span class="pill ${p['ID Verification']==='oui'?'pill-ok':'pill-nok'}">${p['ID Verification']==='oui'?'ID verif ok':'ID verif NOK'}</span>`:'';
+      const dmgPill=p.Damage?`<span class="pill ${p.Damage==='oui'?'pill-ok':'pill-nok'}">${p.Damage==='oui'?'Damage ok':'Damage NOK'}</span>`:'';
       const tripsPill=p.TripsOk?`<span class="pill ${p.TripsOk==='Oui'?'pill-ok':'pill-nok'}">${p.TripsOk==='Oui'?'Trips ok':'Trips NOK'}</span>`:'';
-      const scooters=(window._scooters||[]).filter(s=>s.ID_Passation===p.ID);
-      const rnus=(window._rnus||[]).filter(r=>r.ID_Passation===p.ID);
-      const scooterHTML=scooters.length>0?`
-        <div class="sub-section">
-          <div class="sub-title">Scooters offline (${scooters.length})</div>
-          ${scooters.map(s=>`<div class="offline-row"><strong>${s.Nom||'—'}</strong>${s.Depuis?' · '+s.Depuis:''}${s.Loc2hire?`<br>> 2hire : ${s.Loc2hire}`:''}${s.LocUser?`<br>> Utilisateur : ${s.LocUser}`:''}${s.Batterie?`<br>> Batterie ${s.Batterie}%`:''}${s.Action?`<br>> Actions : <strong>${s.Action}</strong>`:''}</div>`).join('')}
-        </div>`:'';
-      const rnuHTML=rnus.length>0?`<div class="sub-section"><div class="sub-title">RNU</div><div class="rnu-tags">${rnus.map(r=>`<span class="rnu-tag">${r.Nom||'—'}</span>`).join('')}</div></div>`:'';
+      const fleetHTML=`<div class="sub-section"><div class="sub-title">Statuts flotte</div><div class="pills">${FLEET_STATUSES.map(s=>`<span class="pill" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6)">${s.label} : ${p[s.col]??'—'}</span>`).join('')}</div></div>`;
+      const damageHTML = p['Damages Open']!==undefined ? `<div class="astreinte-line">Damages ouverts : <strong>${p['Damages Open']}</strong></div>` : '';
       return `<div class="passation-card">
         <div class="passation-header">
           <div><div class="passation-name">${p['Créé par']||'—'}</div><div class="passation-meta">${dateStr}</div></div>
           ${creneau?`<span class="creneau-badge">${creneau}</span>`:''}
         </div>
         ${p.Astreinte?`<div class="astreinte-line">Astreinte : <strong>${p.Astreinte}</strong></div>`:''}
-        <div class="pills">${vpPill}${repPill}${tripsPill}</div>
+        ${damageHTML}
+        <div class="pills">${idvPill}${dmgPill}${tripsPill}</div>
         ${p.Message?`<div class="msg-block">${p.Message}</div>`:''}
-        ${scooterHTML}${rnuHTML}
+        ${fleetHTML}
         <button class="wa-btn" onclick="sendToWhatsApp('${p.ID}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           Envoyer sur WhatsApp
@@ -1244,66 +1015,13 @@ function getWeekBounds(offset) {
   return {monday,sunday};
 }
 function changeWeek(dir){rapportWeekOffset+=dir;loadRapport();}
-function setFilter(filter,btn){_activeFilter=filter;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderIncidents();}
-function formatDuree(ms){if(ms<0)return'—';const h=Math.floor(ms/3600000);const m=Math.floor((ms%3600000)/60000);if(h===0)return`${m}min`;if(h<24)return`${h}h${m>0?m+'min':''}`;const d=Math.floor(h/24);return`${d}j ${h%24}h`;}
-function dureeClass(ms){const h=ms/3600000;if(h>24)return'duree-long';if(h>8)return'duree-moyen';return'duree-court';}
 
-function buildIncidents(passations,allScooters) {
-  const sorted=[...passations].sort((a,b)=>new Date(a.Date)-new Date(b.Date));
-  const appearances={};
-  sorted.forEach(p=>{
-    allScooters.filter(s=>s.ID_Passation===p.ID).forEach(s=>{
-      if(!s.Nom)return;
-      if(!appearances[s.Nom])appearances[s.Nom]=[];
-      appearances[s.Nom].push({passation:p,scooter:s,date:new Date(p.Date)});
-    });
-  });
-  const incidents=[];
-  Object.entries(appearances).forEach(([nom,apps])=>{
-    let group=[apps[0]];
-    for(let i=1;i<apps.length;i++){
-      if(apps[i].date-apps[i-1].date>48*3600000){incidents.push(buildIncident(nom,group,sorted,allScooters));group=[apps[i]];}
-      else group.push(apps[i]);
-    }
-    incidents.push(buildIncident(nom,group,sorted,allScooters));
-  });
-  return incidents.sort((a,b)=>b.dateDebut-a.dateDebut);
-}
-
-function buildIncident(nom,apps,allPassations,allScooters) {
-  const dateDebut=apps[0].date;
-  const dernierDate=apps[apps.length-1].date;
-  const nextPass=allPassations.find(p=>new Date(p.Date)>dernierDate);
-  let statut,dateResolution,dureeMs;
-  if(nextPass){
-    const nomsNext=allScooters.filter(s=>s.ID_Passation===nextPass.ID).map(s=>s.Nom);
-    if(!nomsNext.includes(nom)){statut='resolu';dateResolution=new Date(nextPass.Date);dureeMs=dateResolution-dateDebut;}
-    else{statut='en-cours';dureeMs=new Date()-dateDebut;}
-  } else {statut='en-cours';dureeMs=new Date()-dateDebut;}
-  const first=apps[0].scooter;
-  return {nom,statut,dateDebut,dateResolution,dureeMs,nbPassations:apps.length,loc2hire:first.Loc2hire||'',action:apps[apps.length-1].scooter.Action||'',par:apps[0].passation['Créé par']||''};
-}
-
-function renderIncidents() {
-  const content=document.getElementById('rapport-content');
-  let filtered=_activeFilter==='tous'?_incidents:_incidents.filter(i=>i.statut===_activeFilter);
-  const zone=content.querySelector('#incident-table-zone');
-  if(!zone)return;
-  if(!filtered.length){zone.innerHTML='<div class="empty">Aucun incident pour ce filtre.</div>';return;}
-  const fmtDate=d=>d instanceof Date&&!isNaN(d)?d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
-  zone.innerHTML=`<div class="incident-table-wrap"><table class="incident-table">
-    <thead><tr><th>Scooter</th><th>Debut</th><th>Resolution</th><th>Duree</th><th>x Passations</th><th>Localisation</th><th>Actions</th><th>Statut</th></tr></thead>
-    <tbody>${filtered.map(inc=>`<tr class="row-${inc.statut}">
-      <td><span class="scooter-nom">${inc.nom}</span></td>
-      <td style="font-size:12px">${fmtDate(inc.dateDebut)}</td>
-      <td style="font-size:12px">${inc.statut==='resolu'?fmtDate(inc.dateResolution):'—'}</td>
-      <td><span class="duree-cell ${dureeClass(inc.dureeMs)}">${formatDuree(inc.dureeMs)}</span></td>
-      <td style="text-align:center">${inc.nbPassations}</td>
-      <td style="font-size:12px;color:rgba(255,255,255,0.35)">${inc.loc2hire||'—'}</td>
-      <td style="font-size:12px;color:rgba(255,255,255,0.35)">${inc.action||'—'}</td>
-      <td><span class="badge badge-${inc.statut}">${inc.statut==='resolu'?'Resolu':'En cours'}</span></td>
-    </tr>`).join('')}</tbody>
-  </table></div>`;
+function computeDamagesDelta(allSorted, idx) {
+  if (idx <= 0) return null;
+  const cur = parseInt(allSorted[idx]['Damages Open'], 10);
+  const prev = parseInt(allSorted[idx-1]['Damages Open'], 10);
+  if (isNaN(cur) || isNaN(prev)) return null;
+  return cur - prev;
 }
 
 async function loadRapport() {
@@ -1313,43 +1031,63 @@ async function loadRapport() {
   const fmt=d=>d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'});
   document.getElementById('rapport-week-label').textContent=`${fmt(monday)} — ${fmt(sunday)}`;
   try {
-    const [r1,r2]=await Promise.all([fetch(SCRIPT_URL+'?action=getPassations'),fetch(SCRIPT_URL+'?action=getScooters')]);
-    const [d1,d2]=await Promise.all([r1.json(),r2.json()]);
-    const allPassations=(d1.passations||[]).sort((a,b)=>new Date(a.Date)-new Date(b.Date));
-    const allScooters=d2.scooters||[];
+    const res=await fetch(SCRIPT_URL+'?action=getPassations');
+    const data=await res.json();
+    const allPassations=(data.passations||[]).sort((a,b)=>new Date(a.Date)-new Date(b.Date));
     const weekPassations=allPassations.filter(p=>{const d=new Date(p.Date);return d>=monday&&d<=sunday;});
     if(!weekPassations.length){content.innerHTML='<div class="empty">Aucune passation cette semaine.</div>';return;}
-    const allIncidents=buildIncidents(allPassations,allScooters);
-    _incidents=allIncidents.filter(inc=>{
-      const inWeek=inc.dateDebut<=sunday&&(!inc.dateResolution||inc.dateResolution>=monday);
-      return inWeek;
-    });
-    const enCours=_incidents.filter(i=>i.statut==='en-cours').length;
-    const resolus=_incidents.filter(i=>i.statut==='resolu').length;
-    const dureesMoy=_incidents.filter(i=>i.statut==='resolu'&&i.dureeMs>0);
-    const dureeMoy=dureesMoy.length>0?formatDuree(dureesMoy.reduce((s,i)=>s+i.dureeMs,0)/dureesMoy.length):'—';
-    const nbVpNok=weekPassations.filter(p=>p.VP==='non').length;
+
+    _rapportRows = weekPassations.map(p => ({ p, delta: computeDamagesDelta(allPassations, allPassations.indexOf(p)) }));
+
+    const damagesVals = weekPassations.map(p=>parseInt(p['Damages Open'],10)).filter(n=>!isNaN(n));
+    const damagesAvg = damagesVals.length ? Math.round(damagesVals.reduce((s,n)=>s+n,0)/damagesVals.length) : null;
+    const weekDelta = damagesVals.length>=2 ? damagesVals[damagesVals.length-1]-damagesVals[0] : null;
+    const idvNonCount = weekPassations.filter(p=>p['ID Verification']==='non').length;
+
+    const fmtDate=d=>isNaN(d)?'—':d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+
     content.innerHTML=`
       <div class="stat-grid">
         <div class="stat-card"><div class="stat-num">${weekPassations.length}</div><div class="stat-label">Passations</div></div>
-        <div class="stat-card"><div class="stat-num danger">${enCours}</div><div class="stat-label">En cours</div></div>
-        <div class="stat-card"><div class="stat-num success">${resolus}</div><div class="stat-label">Resolus</div></div>
-        <div class="stat-card"><div class="stat-num warn">${dureeMoy}</div><div class="stat-label">Duree moy.</div></div>
+        <div class="stat-card"><div class="stat-num">${damagesAvg??'—'}</div><div class="stat-label">Damages moy.</div></div>
+        <div class="stat-card"><div class="stat-num ${weekDelta>0?'danger':weekDelta<0?'success':''}">${weekDelta===null?'—':formatDelta(weekDelta)}</div><div class="stat-label">Δ Damages semaine</div></div>
+        <div class="stat-card"><div class="stat-num danger">${idvNonCount}</div><div class="stat-label">ID verif non à jour</div></div>
       </div>
-      <div id="incident-table-zone"></div>
-      ${nbVpNok>0?`<div class="section" style="margin-top:0"><div class="section-header"><div class="section-icon">⚠️</div><div><div class="section-title">Alertes semaine</div></div></div><div style="font-size:13px;color:rgba(255,255,255,0.35)">VP non a jour : <strong style="color:#FF453A">${nbVpNok} fois</strong></div></div>`:''}`;
-    renderIncidents();
+      <div class="incident-table-wrap"><table class="incident-table">
+        <thead><tr><th>Date</th><th>Par</th><th>Stolen</th><th>Maintenance</th><th>Need inv.</th><th>Damages</th><th>ID verif</th><th>Damage</th><th>Trips</th></tr></thead>
+        <tbody>${_rapportRows.map(({p,delta})=>{
+          const idvOk=p['ID Verification']==='oui';
+          const dmgOk=p.Damage==='oui';
+          const tOk=p.TripsOk==='Oui';
+          return `<tr>
+            <td>${fmtDate(new Date(p.Date))}</td>
+            <td>${p['Créé par']||'—'}</td>
+            <td>${p.Stolen??'—'}</td>
+            <td>${p.Maintenance??'—'}</td>
+            <td>${p['Need Investigation']??'—'}</td>
+            <td>${p['Damages Open']??'—'} ${delta!==null?formatDelta(delta):''}</td>
+            <td><span class="badge ${idvOk?'badge-ok':'badge-nok'}">${idvOk?'ok':'NOK'}</span></td>
+            <td><span class="badge ${dmgOk?'badge-ok':'badge-nok'}">${dmgOk?'ok':'NOK'}</span></td>
+            <td><span class="badge ${tOk?'badge-ok':'badge-nok'}">${tOk?'ok':'à vérifier'}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>
+      ${idvNonCount>0?`<div class="section" style="margin-top:0"><div class="section-header"><div class="section-icon">⚠️</div><div><div class="section-title">Alertes semaine</div></div></div><div style="font-size:13px;color:var(--ink-dim)">ID verification non à jour : <strong style="color:var(--danger)">${idvNonCount} fois</strong></div></div>`:''}`;
   } catch(e){content.innerHTML='<div class="empty">Impossible de charger le rapport.</div>';}
 }
 
 async function exportRapport() {
-  if(!_incidents.length)return;
+  if(!_rapportRows.length)return;
   const btn=document.getElementById('export-btn');
   btn.disabled=true;btn.textContent='Export...';
   const {monday,sunday}=getWeekBounds(rapportWeekOffset);
-  const fmtD=d=>d instanceof Date&&!isNaN(d)?d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
   const semaine=`${monday.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'})} - ${sunday.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'})}`;
-  const rows=_incidents.map(inc=>({semaine,scooter:inc.nom,statut:inc.statut==='resolu'?'Resolu':'En cours',dateDebut:fmtD(inc.dateDebut),dateResolution:fmtD(inc.dateResolution),duree:formatDuree(inc.dureeMs),nbPassations:inc.nbPassations,loc2hire:inc.loc2hire,action:inc.action,par:inc.par}));
+  const rows=_rapportRows.map(({p,delta})=>({
+    semaine, date:p.Date, creneau:p['Créneau'], creePar:p['Créé par'],
+    ...Object.fromEntries(FLEET_STATUSES.map(s=>[s.key, p[s.col]])),
+    idVerification:p['ID Verification'], damage:p.Damage, damagesOpen:p['Damages Open'], damagesDelta:delta,
+    tripsOk:p.TripsOk
+  }));
   try {
     await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'exportRapport',rows}),mode:'no-cors'});
     showToast('Rapport exporte dans Google Sheets !','success');
@@ -1381,77 +1119,10 @@ function loadPrenom() {
   } catch(e) {}
 }
 
-async function loadPrevOfflines() {
-  const banner = document.getElementById('prev-offline-banner');
-  banner.innerHTML = '';
-  try {
-    const [r1, r2] = await Promise.all([
-      fetch(SCRIPT_URL + '?action=getPassations'),
-      fetch(SCRIPT_URL + '?action=getScooters')
-    ]);
-    const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
-    const passations = (d1.passations||[]).sort((a,b) => new Date(b.Date)-new Date(a.Date));
-    if (!passations.length) return;
-    const lastPass = passations[0];
-    const prevScooters = (d2.scooters||[]).filter(s => s.ID_Passation === lastPass.ID);
-    if (!prevScooters.length) return;
-
-    const lastDate = new Date(lastPass.Date);
-    const dateStr = isNaN(lastDate) ? '' : lastDate.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-
-    let html = `<div style="background:rgba(255,214,10,0.11);border:1px solid rgba(243,156,18,0.3);border-radius:var(--r2);padding:1rem 1.25rem;margin-bottom:1rem">
-      <div style="font-size:11px;font-weight:700;color:#FFD60A;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">
-        Passation précédente · ${dateStr} · ${lastPass['Créé par']||'—'} — Ces scooters étaient offline
-      </div>`;
-
-    prevScooters.forEach(s => {
-      const safeNom = (s.Nom||'').replace(/'/g,"\\'");
-      const safeLoc = (s.Loc2hire||'').replace(/'/g,"\\'");
-      const safeLocU = (s.LocUser||'').replace(/'/g,"\\'");
-      const safeAction = (s.Action||'').replace(/'/g,"\\'");
-      const safeType = (s.Type||'').replace(/'/g,"\\'");
-      const typeLabel = s.Type==='batterie'?'🔋 Batterie vide':s.Type==='session'?'🚨 Session en cours':s.Type==='offline'?'⚡ Offline (batterie ok)':'';
-      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:14px;margin-bottom:6px;gap:8px">
-        <div>
-          <div style="font-size:15px;font-weight:600;color:white">${s.Nom||'—'}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px">${s.Loc2hire||''}${typeLabel?' · '+typeLabel:''}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button onclick="addScooterFromPrev('${safeNom}','${safeLoc}','${safeLocU}','${s.Batterie||''}','${safeAction}','${safeType}',this)" style="padding:7px 12px;background:rgba(255,214,10,0.12);border:1px solid rgba(255,214,10,0.3);border-radius:11px;font-size:12px;font-weight:500;cursor:pointer;color:#FFD60A;font-family:var(--font)">Encore offline</button>
-          <button onclick="markResolved(this)" style="padding:7px 12px;background:rgba(48,209,88,0.1);border:1px solid rgba(48,209,88,0.25);border-radius:11px;font-size:12px;font-weight:500;cursor:pointer;color:#30D158;font-family:var(--font)">Résolu</button>
-        </div>
-      </div>`;
-    });
-
-    html += `</div>`;
-    banner.innerHTML = html;
-  } catch(e) { /* silently fail */ }
-}
-
-function addScooterFromPrev(nom, loc2hire, locuser, batterie, action, type, btn) {
-  const actions = action ? ACTIONS.filter(a => action.includes(a)) : [];
-  addScooter({ nom, loc2hire, locuser, batterie, depuis:'', type, actions });
-  // Mark this prev scooter row as handled
-  const row = btn.closest('div[style*="display:flex"]');
-  if (row) {
-    row.style.opacity = '0.35';
-    row.style.pointerEvents = 'none';
-  }
-  showToast(`${nom} ajouté`, 'success');
-}
-
-function markResolved(btn) {
-  const row = btn.closest('div[style*="display:flex"]');
-  if (row) {
-    row.style.opacity = '0.35';
-    row.style.pointerEvents = 'none';
-    const nom = row.querySelector('div[style*="font-size:17px"]')?.textContent || '';
-    row.innerHTML += `<span style="font-size:11px;color:#30D158;font-weight:600">Marqué résolu</span>`;
-  }
-}
-
 initAstreinte();
 loadPrenom();
+initFleetGrid();
+loadPrevPassation();
 </script>
 </body>
 </html>
