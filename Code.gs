@@ -4,13 +4,17 @@ const SHEET_PASSATIONS = 'Passations';
 const SHEET_ACCIDENTS = 'Accidents';
 const SHEET_RAPPORT = 'Rapport';
 
-const FLEET_COLUMNS = ['Available', 'Charging', 'Discharged', 'Need Investigation', 'Maintenance', 'Stolen', 'Not Ready', 'Rebalancing'];
+const FLEET_COLUMNS = [
+  'Available', 'Charging', 'Discharged', 'Need Investigation', 'Maintenance',
+  'Stolen', 'Not Ready', 'Rebalancing', 'In Use', 'Transportation', 'Storage'
+];
 
 const PASSATION_HEADERS = [
   'ID', 'Date', 'Créneau', 'Ville', 'Astreinte', 'Créé par',
   ...FLEET_COLUMNS,
   'ID Verification', 'ID Verification Comment',
   'Damage', 'Damage Comment', 'Damages Open',
+  'Damages Reported Today', 'Damages Reported Yesterday',
   'TripsOk', 'Trips Detail', 'Message'
 ];
 
@@ -42,14 +46,40 @@ function doPost(e) {
 
 // ─── SHEET HELPERS ───
 
+// Crée l'onglet avec les en-têtes s'il n'existe pas. S'il existe déjà,
+// ajoute en fin de ligne les en-têtes qui manqueraient (ex: nouveaux champs
+// ajoutés côté front après la création initiale de l'onglet), sans jamais
+// réordonner ou supprimer les colonnes existantes — pour ne pas décaler les
+// données déjà écrites.
 function getSheet_(name, headers) {
   let sheet = SS.getSheetByName(name);
   if (!sheet) {
     sheet = SS.insertSheet(name);
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
+  } else {
+    ensureHeaders_(sheet, headers);
   }
   return sheet;
+}
+
+function ensureHeaders_(sheet, headers) {
+  const lastCol = sheet.getLastColumn();
+  const existing = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+  const missing = headers.filter(h => existing.indexOf(h) === -1);
+  if (missing.length) {
+    sheet.getRange(1, existing.length + 1, 1, missing.length).setValues([missing]);
+  }
+}
+
+// Écrit `values` (objet { "Nom de colonne": valeur }) dans une nouvelle ligne,
+// en alignant chaque valeur sur la colonne correspondante d'après l'en-tête
+// réel de la feuille (peu importe l'ordre) plutôt que sur une position fixe.
+function appendRowByHeader_(sheet, values) {
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const row = headers.map(h => (h in values) ? values[h] : '');
+  sheet.appendRow(row);
 }
 
 function readSheet_(name) {
@@ -76,31 +106,36 @@ function addPassation_(p) {
   const sheet = getSheet_(SHEET_PASSATIONS, PASSATION_HEADERS);
   const id = Utilities.getUuid();
 
-  const row = [
-    id,
-    p.date || new Date().toISOString(),
-    p.creneau || '',
-    p.ville || '',
-    p.astreinte || '',
-    p.creePar || '',
-    p.available ?? 0,
-    p.charging ?? 0,
-    p.discharged ?? 0,
-    p.needInvestigation ?? 0,
-    p.maintenance ?? 0,
-    p.stolen ?? 0,
-    p.notReady ?? 0,
-    p.rebalancing ?? 0,
-    p.idVerification || '',
-    p.idVerificationComment || '',
-    p.damage || '',
-    p.damageComment || '',
-    p.damagesOpen ?? '',
-    p.tripsOk || '',
-    p.tripsDetail || '',
-    p.message || ''
-  ];
-  sheet.appendRow(row);
+  const values = {
+    'ID': id,
+    'Date': p.date || new Date().toISOString(),
+    'Créneau': p.creneau || '',
+    'Ville': p.ville || '',
+    'Astreinte': p.astreinte || '',
+    'Créé par': p.creePar || '',
+    'Available': p.available ?? 0,
+    'Charging': p.charging ?? 0,
+    'Discharged': p.discharged ?? 0,
+    'Need Investigation': p.needInvestigation ?? 0,
+    'Maintenance': p.maintenance ?? 0,
+    'Stolen': p.stolen ?? 0,
+    'Not Ready': p.notReady ?? 0,
+    'Rebalancing': p.rebalancing ?? 0,
+    'In Use': p.inUse ?? 0,
+    'Transportation': p.transportation ?? 0,
+    'Storage': p.storage ?? 0,
+    'ID Verification': p.idVerification || '',
+    'ID Verification Comment': p.idVerificationComment || '',
+    'Damage': p.damage || '',
+    'Damage Comment': p.damageComment || '',
+    'Damages Open': p.damagesOpen ?? '',
+    'Damages Reported Today': p.damagesReportedToday ?? '',
+    'Damages Reported Yesterday': p.damagesReportedYesterday ?? '',
+    'TripsOk': p.tripsOk || '',
+    'Trips Detail': p.tripsDetail || '',
+    'Message': p.message || ''
+  };
+  appendRowByHeader_(sheet, values);
 
   if (p.accidents && p.accidents.length) {
     const accSheet = getSheet_(SHEET_ACCIDENTS, ACCIDENT_HEADERS);
