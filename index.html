@@ -423,6 +423,14 @@
           <input type="number" id="dmg-count" min="0" placeholder="Ex : 23" oninput="updateDamageDelta()">
           <div class="dmg-delta" id="dmg-delta"></div>
         </div>
+        <div class="field">
+          <label>Damages reported today</label>
+          <input type="number" id="dmg-today" min="0" placeholder="Ex : 5">
+        </div>
+        <div class="field">
+          <label>Damages reported yesterday</label>
+          <input type="number" id="dmg-yesterday" min="0" placeholder="Ex : 3">
+        </div>
       </div>
       <div class="section">
         <div class="section-header">
@@ -524,7 +532,7 @@
   </div>
 </div>
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKJba0nS2cv4Et1vKUsMBQgPWb2HPtfHFgowUJl_-VK_z4pUFaUQNP-EuUN50fl9R1_w/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwb4OZ3IOdwEd4qsEuydV-iIxWwOLOSgY0ZJJJpTCU_VGKtzqjHq3czlRK2msjWMv_edQ/exec";
 const FLEET_STATUSES = [
   { key:'available', label:'Available', col:'Available' },
   { key:'charging', label:'Charging', col:'Charging' },
@@ -533,7 +541,10 @@ const FLEET_STATUSES = [
   { key:'maintenance', label:'Maintenance', col:'Maintenance' },
   { key:'stolen', label:'Stolen', col:'Stolen' },
   { key:'notReady', label:'Not ready', col:'Not Ready' },
-  { key:'rebalancing', label:'Rebalancing', col:'Rebalancing' }
+  { key:'rebalancing', label:'Rebalancing', col:'Rebalancing' },
+  { key:'inUse', label:'In Use', col:'In Use' },
+  { key:'transportation', label:'Transportation', col:'Transportation' },
+  { key:'storage', label:'Storage', col:'Storage' }
 ];
 let currentStep = 1, rapportWeekOffset = 0;
 let _prevPassation = null;
@@ -561,7 +572,6 @@ function getAstreinte(date) {
   const day = d.getDay();
   const monday = new Date(d);
   monday.setDate(d.getDate() - (day===0?6:day-1));
-  // Utiliser la date locale et non UTC pour éviter le décalage horaire
   const year = monday.getFullYear();
   const mo = String(monday.getMonth()+1).padStart(2,'0');
   const da = String(monday.getDate()).padStart(2,'0');
@@ -651,6 +661,8 @@ async function buildRecap() {
   const idv = document.getElementById('idv-val').value;
   const dmg = document.getElementById('dmg-val').value;
   const dmgCount = document.getElementById('dmg-count').value;
+  const dmgToday = document.getElementById('dmg-today').value;
+  const dmgYesterday = document.getElementById('dmg-yesterday').value;
   const trips = document.getElementById('trips-ok').checked ? 'OK' : 'A verifier';
 
   let html = `<strong style="color:var(--ink)">${creePar}</strong> · ${creneau}<br>`;
@@ -666,10 +678,11 @@ async function buildRecap() {
   }
   html += `ID verification : <strong style="color:${idv==='oui'?'var(--ok)':'var(--danger)'}">${idv==='oui'?'A jour':'Non a jour'}</strong><br>`;
   html += `Damage : <strong style="color:${dmg==='oui'?'var(--ok)':'var(--danger)'}">${dmg==='oui'?'A jour':'Non a jour'}</strong> &nbsp; Ouverts : <strong>${dmgCount||0}</strong>${_prevPassation&&_prevPassation['Damages Open']!==undefined?' '+formatDelta(damageDelta()):''}<br>`;
+  html += `Damages reported today : <strong>${dmgToday||0}</strong><br>`;
+  html += `Damages reported yesterday : <strong>${dmgYesterday||0}</strong><br>`;
   html += `Trips : <strong>${trips}</strong>`;
   document.getElementById('recap-content').innerHTML = html;
 
-  // Contexte de la passation précédente
   if (_prevPassation) {
     const prev = _prevPassation;
     const prevDate = new Date(prev.Date);
@@ -707,6 +720,11 @@ async function loadPrevPassation() {
     const data = await res.json();
     const passations = (data.passations || []).sort((a,b) => new Date(b.Date) - new Date(a.Date));
     _prevPassation = passations[0] || null;
+    // Pré-remplit le champ damages ouverts avec la valeur de la passation précédente
+    if (_prevPassation && _prevPassation['Damages Open'] !== undefined && _prevPassation['Damages Open'] !== '') {
+      document.getElementById('dmg-count').value = _prevPassation['Damages Open'];
+      updateDamageDelta();
+    }
   } catch(e) { _prevPassation = null; }
 }
 
@@ -817,6 +835,8 @@ async function submitPassation() {
     damage:document.getElementById('dmg-val').value,
     damageComment:document.getElementById('dmg-comment').value,
     damagesOpen:document.getElementById('dmg-count').value,
+    damagesReportedToday:document.getElementById('dmg-today').value,
+    damagesReportedYesterday:document.getElementById('dmg-yesterday').value,
     tripsOk:tripsOk?'Oui':'Non',
     tripsDetail:tripsOk?'':document.getElementById('trips-text').value,
     message:document.getElementById('message').value,
@@ -824,14 +844,14 @@ async function submitPassation() {
   };
   try {
     await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload),mode:'no-cors'});
-    showToast('Passation envoyee !','success');
+    showToast('Passation envoyée !','success');
     resetForm();
   } catch(e) { showToast('Erreur lors de l\'envoi.','error'); }
   btn.disabled=false; btn.textContent='Envoyer la passation';
 }
 
 function resetForm() {
-  ['creePar','creneau','message','idv-comment','dmg-comment','dmg-count','trips-text'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['creePar','creneau','message','idv-comment','dmg-comment','dmg-count','dmg-today','dmg-yesterday','trips-text'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('prev-passation-wrap').innerHTML='';
   document.getElementById('dmg-delta').textContent='';
   initFleetGrid();
@@ -850,7 +870,6 @@ function buildWhatsAppText(p, prevP) {
   const date = new Date(p.Date);
   const dateStr = isNaN(date)?p.Date:date.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const creneau = p['Créneau']&&!p['Créneau'].includes('T22:00')&&!p['Créneau'].includes('T00:00')?p['Créneau']:'';
-  // Recalcule l'astreinte à partir de la date de la passation
   const astrData = getAstreinte(date);
   const astrText = astrData ? `${astrData.nom} (${astrData.tel})` : (p.Astreinte||'—');
   const sep=`__________________________\n`;
@@ -873,13 +892,19 @@ function buildWhatsAppText(p, prevP) {
     const delta = (prevP && !isNaN(prevCount)) ? parseInt(p['Damages Open'],10)-prevCount : null;
     t += `Ouverts actuellement : ${p['Damages Open']}${delta!==null&&!isNaN(delta)?' ('+(delta>0?'+':'')+delta+' vs passation précédente)':''}\n`;
   }
+  if (p['Damages Reported Today'] !== undefined && p['Damages Reported Today'] !== '') {
+    t += `Reported today : ${p['Damages Reported Today']}\n`;
+  }
+  if (p['Damages Reported Yesterday'] !== undefined && p['Damages Reported Yesterday'] !== '') {
+    t += `Reported yesterday : ${p['Damages Reported Yesterday']}\n`;
+  }
   if (p.TripsOk==='Non' && p['Trips Detail']) { t+=sep; t+=`TRIPS LONGS\n${p['Trips Detail']}\n`; }
   if(p.Message){t+=sep;t+=`${p.Message}\n`;}
   return t;
 }
 
 function sendToWhatsApp(passationId) {
-  const list = window._passations||[]; // trié du plus récent au plus ancien
+  const list = window._passations||[];
   const idx = list.findIndex(x=>x.ID===passationId);
   const p = list[idx];
   const prevP = list[idx+1];
@@ -909,7 +934,6 @@ async function loadLive() {
 
     let html = '';
 
-    // Astreinte
     html += `<div class="astr-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div>
         <div class="astr-label">Astreinte en cours</div>
@@ -928,7 +952,6 @@ async function loadLive() {
       return;
     }
 
-    // Dernière passation
     const idvOk = lastPass['ID Verification'] === 'oui';
     const dmgOk = lastPass.Damage === 'oui';
     const tripsOk = lastPass.TripsOk === 'Oui';
@@ -942,7 +965,6 @@ async function loadLive() {
       ${lastPass.Message ? `<div style="font-size:13px;color:var(--ink-dim);margin-top:10px;border-left:2px solid var(--accent);padding-left:10px">${lastPass.Message}</div>` : ''}
     </div>`;
 
-    // Damages
     const dmgCountRaw = lastPass['Damages Open'];
     const dmgCount = parseInt(dmgCountRaw, 10);
     const dmgPrev = prevPass ? parseInt(prevPass['Damages Open'], 10) : NaN;
@@ -953,7 +975,16 @@ async function loadLive() {
       <div style="font-size:13px;font-family:var(--mono);color:${dmgDelta>0?'var(--danger)':dmgDelta<0?'var(--ok)':'var(--ink-dim)'}">${dmgDelta===null?'':formatDelta(dmgDelta)+' vs passation précédente'}</div>
     </div>`;
 
-    // Statuts flotte
+    const dmgToday = lastPass['Damages Reported Today'];
+    const dmgYesterday = lastPass['Damages Reported Yesterday'];
+    if (dmgToday !== undefined || dmgYesterday !== undefined) {
+      html += `<div class="live-section-title">Activité damage</div>`;
+      html += `<div style="display:flex;gap:10px;margin-bottom:1.25rem">
+        <div class="section" style="flex:1;text-align:center"><div style="font-size:22px;font-weight:600">${dmgToday||'0'}</div><div style="font-size:11px;color:var(--ink-dim)">Today</div></div>
+        <div class="section" style="flex:1;text-align:center"><div style="font-size:22px;font-weight:600">${dmgYesterday||'0'}</div><div style="font-size:11px;color:var(--ink-dim)">Yesterday</div></div>
+      </div>`;
+    }
+
     html += `<div class="live-section-title">Statuts flotte <span class="live-section-count">${lastPassStr}</span></div>`;
     html += `<div class="live-stat-row">${FLEET_STATUSES.map(s => {
       const val = lastPass[s.col];
@@ -987,14 +1018,16 @@ async function loadHistory() {
       const dmgPill=p.Damage?`<span class="pill ${p.Damage==='oui'?'pill-ok':'pill-nok'}">${p.Damage==='oui'?'Damage ok':'Damage NOK'}</span>`:'';
       const tripsPill=p.TripsOk?`<span class="pill ${p.TripsOk==='Oui'?'pill-ok':'pill-nok'}">${p.TripsOk==='Oui'?'Trips ok':'Trips NOK'}</span>`:'';
       const fleetHTML=`<div class="sub-section"><div class="sub-title">Statuts flotte</div><div class="pills">${FLEET_STATUSES.map(s=>`<span class="pill" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6)">${s.label} : ${p[s.col]??'—'}</span>`).join('')}</div></div>`;
-      const damageHTML = p['Damages Open']!==undefined ? `<div class="astreinte-line">Damages ouverts : <strong>${p['Damages Open']}</strong></div>` : '';
+      const damageOpenHTML = p['Damages Open']!==undefined ? `<div class="astreinte-line">Damages ouverts : <strong>${p['Damages Open']}</strong></div>` : '';
+      const damageTodayHTML = p['Damages Reported Today']!==undefined ? `<div class="astreinte-line">Reported today : <strong>${p['Damages Reported Today']}</strong></div>` : '';
+      const damageYesterdayHTML = p['Damages Reported Yesterday']!==undefined ? `<div class="astreinte-line">Reported yesterday : <strong>${p['Damages Reported Yesterday']}</strong></div>` : '';
       return `<div class="passation-card">
         <div class="passation-header">
           <div><div class="passation-name">${p['Créé par']||'—'}</div><div class="passation-meta">${dateStr}</div></div>
           ${creneau?`<span class="creneau-badge">${creneau}</span>`:''}
         </div>
         ${p.Astreinte?`<div class="astreinte-line">Astreinte : <strong>${p.Astreinte}</strong></div>`:''}
-        ${damageHTML}
+        ${damageOpenHTML}${damageTodayHTML}${damageYesterdayHTML}
         <div class="pills">${idvPill}${dmgPill}${tripsPill}</div>
         ${p.Message?`<div class="msg-block">${p.Message}</div>`:''}
         ${fleetHTML}
@@ -1054,7 +1087,7 @@ async function loadRapport() {
         <div class="stat-card"><div class="stat-num danger">${idvNonCount}</div><div class="stat-label">ID verif non à jour</div></div>
       </div>
       <div class="incident-table-wrap"><table class="incident-table">
-        <thead><tr><th>Date</th><th>Par</th><th>Stolen</th><th>Maintenance</th><th>Need inv.</th><th>Damages</th><th>ID verif</th><th>Damage</th><th>Trips</th></tr></thead>
+        <thead><tr><th>Date</th><th>Par</th><th>Stolen</th><th>Maintenance</th><th>Need inv.</th><th>Damages</th><th>Dam. today</th><th>Dam. yesterday</th><th>ID verif</th><th>Damage</th><th>Trips</th></tr></thead>
         <tbody>${_rapportRows.map(({p,delta})=>{
           const idvOk=p['ID Verification']==='oui';
           const dmgOk=p.Damage==='oui';
@@ -1066,6 +1099,8 @@ async function loadRapport() {
             <td>${p.Maintenance??'—'}</td>
             <td>${p['Need Investigation']??'—'}</td>
             <td>${p['Damages Open']??'—'} ${delta!==null?formatDelta(delta):''}</td>
+            <td>${p['Damages Reported Today']??'—'}</td>
+            <td>${p['Damages Reported Yesterday']??'—'}</td>
             <td><span class="badge ${idvOk?'badge-ok':'badge-nok'}">${idvOk?'ok':'NOK'}</span></td>
             <td><span class="badge ${dmgOk?'badge-ok':'badge-nok'}">${dmgOk?'ok':'NOK'}</span></td>
             <td><span class="badge ${tOk?'badge-ok':'badge-nok'}">${tOk?'ok':'à vérifier'}</span></td>
@@ -1086,16 +1121,15 @@ async function exportRapport() {
     semaine, date:p.Date, creneau:p['Créneau'], creePar:p['Créé par'],
     ...Object.fromEntries(FLEET_STATUSES.map(s=>[s.key, p[s.col]])),
     idVerification:p['ID Verification'], damage:p.Damage, damagesOpen:p['Damages Open'], damagesDelta:delta,
+    damagesReportedToday:p['Damages Reported Today'], damagesReportedYesterday:p['Damages Reported Yesterday'],
     tripsOk:p.TripsOk
   }));
   try {
     await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'exportRapport',rows}),mode:'no-cors'});
-    showToast('Rapport exporte dans Google Sheets !','success');
+    showToast('Rapport exporté dans Google Sheets !','success');
   } catch(e){showToast('Erreur export.','error');}
   btn.disabled=false;btn.textContent='Exporter Sheets';
 }
-
-// ─── DEMO DATA INJECTION ───
 
 // ─── QUICK HELPERS ───
 function setNow() {
@@ -1126,4 +1160,3 @@ loadPrevPassation();
 </script>
 </body>
 </html>
-</body></html>
