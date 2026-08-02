@@ -534,14 +534,20 @@
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwb4OZ3IOdwEd4qsEuydV-iIxWwOLOSgY0ZJJJpTCU_VGKtzqjHq3czlRK2msjWMv_edQ/exec";
 
-// Apps Script répond parfois lentement ou timeout (chaîne de redirection,
-// quotas d'exécution) — un seul essai raté ne doit pas bloquer l'utilisateur.
-async function fetchJSON_(url, retries = 1, delayMs = 900) {
+// Apps Script répond parfois très lentement, voire reste bloqué sans jamais
+// répondre ni erreurer (chaîne de redirection, quotas d'exécution) — fetch()
+// seul n'a pas de timeout natif, donc un appel peut pendre indéfiniment.
+// On force un timeout par tentative + plusieurs tentatives avant d'abandonner.
+async function fetchJSON_(url, retries = 2, delayMs = 600, timeoutMs = 8000) {
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
       return await res.json();
     } catch (e) {
+      clearTimeout(timer);
       if (attempt === retries) throw e;
       await new Promise(r => setTimeout(r, delayMs));
     }
