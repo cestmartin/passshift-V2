@@ -533,6 +533,21 @@
 </div>
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwb4OZ3IOdwEd4qsEuydV-iIxWwOLOSgY0ZJJJpTCU_VGKtzqjHq3czlRK2msjWMv_edQ/exec";
+
+// Apps Script répond parfois lentement ou timeout (chaîne de redirection,
+// quotas d'exécution) — un seul essai raté ne doit pas bloquer l'utilisateur.
+async function fetchJSON_(url, retries = 1, delayMs = 900) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url);
+      return await res.json();
+    } catch (e) {
+      if (attempt === retries) throw e;
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+}
+
 const FLEET_STATUSES = [
   { key:'available', label:'Available', col:'Available' },
   { key:'charging', label:'Charging', col:'Charging' },
@@ -716,8 +731,7 @@ function collectFleet() {
 // ─── DAMAGE DELTA ───
 async function loadPrevPassation() {
   try {
-    const res = await fetch(SCRIPT_URL + '?action=getPassations');
-    const data = await res.json();
+    const data = await fetchJSON_(SCRIPT_URL + '?action=getPassations');
     const passations = (data.passations || []).sort((a,b) => new Date(b.Date) - new Date(a.Date));
     _prevPassation = passations[0] || null;
     // Pré-remplit le champ damages ouverts avec la valeur de la passation précédente
@@ -920,8 +934,7 @@ async function loadLive() {
   content.innerHTML = '<div class="loading">Chargement...</div>';
 
   try {
-    const res = await fetch(SCRIPT_URL + '?action=getPassations');
-    const data = await res.json();
+    const data = await fetchJSON_(SCRIPT_URL + '?action=getPassations');
     const allPassations = (data.passations||[]).sort((a,b) => new Date(a.Date)-new Date(b.Date));
     const lastPass = allPassations[allPassations.length - 1];
     const prevPass = allPassations[allPassations.length - 2];
@@ -995,7 +1008,7 @@ async function loadLive() {
 
     content.innerHTML = html;
   } catch(e) {
-    content.innerHTML = '<div class="live-empty">Impossible de charger les données.</div>';
+    content.innerHTML = '<div class="live-empty">Impossible de charger les données.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadLive()">Réessayer</button></div>';
   }
   btn.classList.remove('spinning');
 }
@@ -1005,8 +1018,7 @@ async function loadHistory() {
   const list=document.getElementById('history-list');
   list.innerHTML='<div class="loading">Chargement...</div>';
   try {
-    const res=await fetch(SCRIPT_URL+'?action=getPassations');
-    const data=await res.json();
+    const data=await fetchJSON_(SCRIPT_URL+'?action=getPassations');
     const passations=(data.passations||[]).sort((a,b)=>new Date(b.Date)-new Date(a.Date));
     window._passations=passations;
     if(!passations.length){list.innerHTML='<div class="empty">Aucune passation trouvée.</div>';return;}
@@ -1037,7 +1049,7 @@ async function loadHistory() {
         </button>
       </div>`;
     }).join('');
-  } catch(e){list.innerHTML='<div class="empty">Impossible de charger l\'historique.</div>';}
+  } catch(e){list.innerHTML='<div class="empty">Impossible de charger l\'historique.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadHistory()">Réessayer</button></div>';}
 }
 
 // ─── RAPPORT ───
@@ -1064,8 +1076,7 @@ async function loadRapport() {
   const fmt=d=>d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'});
   document.getElementById('rapport-week-label').textContent=`${fmt(monday)} — ${fmt(sunday)}`;
   try {
-    const res=await fetch(SCRIPT_URL+'?action=getPassations');
-    const data=await res.json();
+    const data=await fetchJSON_(SCRIPT_URL+'?action=getPassations');
     const allPassations=(data.passations||[]).sort((a,b)=>new Date(a.Date)-new Date(b.Date));
     const weekPassations=allPassations.filter(p=>{const d=new Date(p.Date);return d>=monday&&d<=sunday;});
     if(!weekPassations.length){content.innerHTML='<div class="empty">Aucune passation cette semaine.</div>';return;}
@@ -1108,7 +1119,7 @@ async function loadRapport() {
         }).join('')}</tbody>
       </table></div>
       ${idvNonCount>0?`<div class="section" style="margin-top:0"><div class="section-header"><div class="section-icon">⚠️</div><div><div class="section-title">Alertes semaine</div></div></div><div style="font-size:13px;color:var(--ink-dim)">ID verification non à jour : <strong style="color:var(--danger)">${idvNonCount} fois</strong></div></div>`:''}`;
-  } catch(e){content.innerHTML='<div class="empty">Impossible de charger le rapport.</div>';}
+  } catch(e){content.innerHTML='<div class="empty">Impossible de charger le rapport.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadRapport()">Réessayer</button></div>';}
 }
 
 async function exportRapport() {
