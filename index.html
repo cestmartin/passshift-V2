@@ -534,22 +534,25 @@
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwb4OZ3IOdwEd4qsEuydV-iIxWwOLOSgY0ZJJJpTCU_VGKtzqjHq3czlRK2msjWMv_edQ/exec";
 
-// Apps Script répond parfois très lentement, voire reste bloqué sans jamais
-// répondre ni erreurer (chaîne de redirection, quotas d'exécution) — fetch()
-// seul n'a pas de timeout natif, donc un appel peut pendre indéfiniment.
-// On force un timeout par tentative + plusieurs tentatives avant d'abandonner.
-async function fetchJSON_(url, retries = 2, delayMs = 600, timeoutMs = 8000) {
+// Apps Script exécute correctement le script (confirmé côté "Exécutions")
+// mais échoue parfois à servir la réponse finale (404 sur googleusercontent.com
+// après une redirection réussie) — un défaut connu des Web Apps Apps Script,
+// hors de notre contrôle. On absorbe ça avec plusieurs tentatives + backoff
+// progressif, et un timeout explicite car fetch() peut aussi rester bloqué
+// sans jamais répondre ni erreurer.
+async function fetchJSON_(url, retries = 4, timeoutMs = 8000) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timer);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       return await res.json();
     } catch (e) {
       clearTimeout(timer);
       if (attempt === retries) throw e;
-      await new Promise(r => setTimeout(r, delayMs));
+      await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
     }
   }
 }
@@ -568,6 +571,9 @@ const FLEET_STATUSES = [
   { key:'storage', label:'Storage', col:'Storage' }
 ];
 let currentStep = 1, rapportWeekOffset = 0;
+// Compteurs anti-course : si plusieurs appels (retry manuel + auto) sont en
+// vol en même temps, seul le plus récent a le droit d'écrire le DOM.
+let _historyReq = 0, _liveReq = 0, _rapportReq = 0;
 let _prevPassation = null;
 let _rapportRows = [];
 
@@ -934,6 +940,7 @@ function sendToWhatsApp(passationId) {
 
 // ─── LIVE ───
 async function loadLive() {
+  const reqId = ++_liveReq;
   const content = document.getElementById('live-content');
   const btn = document.getElementById('refresh-btn');
   btn.classList.add('spinning');
@@ -941,6 +948,7 @@ async function loadLive() {
 
   try {
     const data = await fetchJSON_(SCRIPT_URL + '?action=getPassations');
+    if (reqId !== _liveReq) return; // une tentative plus récente est en cours
     const allPassations = (data.passations||[]).sort((a,b) => new Date(a.Date)-new Date(b.Date));
     const lastPass = allPassations[allPassations.length - 1];
     const prevPass = allPassations[allPassations.length - 2];
@@ -1014,17 +1022,21 @@ async function loadLive() {
 
     content.innerHTML = html;
   } catch(e) {
-    content.innerHTML = '<div class="live-empty">Impossible de charger les données.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadLive()">Réessayer</button></div>';
+    if (reqId === _liveReq) {
+      content.innerHTML = '<div class="live-empty">Impossible de charger les données.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadLive()">Réessayer</button></div>';
+    }
   }
   btn.classList.remove('spinning');
 }
 
 // ─── HISTORY ───
 async function loadHistory() {
+  const reqId = ++_historyReq;
   const list=document.getElementById('history-list');
   list.innerHTML='<div class="loading">Chargement...</div>';
   try {
     const data=await fetchJSON_(SCRIPT_URL+'?action=getPassations');
+    if (reqId !== _historyReq) return; // une tentative plus récente est en cours
     const passations=(data.passations||[]).sort((a,b)=>new Date(b.Date)-new Date(a.Date));
     window._passations=passations;
     if(!passations.length){list.innerHTML='<div class="empty">Aucune passation trouvée.</div>';return;}
@@ -1055,7 +1067,7 @@ async function loadHistory() {
         </button>
       </div>`;
     }).join('');
-  } catch(e){list.innerHTML='<div class="empty">Impossible de charger l\'historique.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadHistory()">Réessayer</button></div>';}
+  } catch(e){ if (reqId === _historyReq) list.innerHTML='<div class="empty">Impossible de charger l\'historique.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadHistory()">Réessayer</button></div>'; }
 }
 
 // ─── RAPPORT ───
@@ -1076,6 +1088,7 @@ function computeDamagesDelta(allSorted, idx) {
 }
 
 async function loadRapport() {
+  const reqId = ++_rapportReq;
   const content=document.getElementById('rapport-content');
   content.innerHTML='<div class="loading">Chargement...</div>';
   const {monday,sunday}=getWeekBounds(rapportWeekOffset);
@@ -1083,6 +1096,7 @@ async function loadRapport() {
   document.getElementById('rapport-week-label').textContent=`${fmt(monday)} — ${fmt(sunday)}`;
   try {
     const data=await fetchJSON_(SCRIPT_URL+'?action=getPassations');
+    if (reqId !== _rapportReq) return; // une tentative plus récente est en cours
     const allPassations=(data.passations||[]).sort((a,b)=>new Date(a.Date)-new Date(b.Date));
     const weekPassations=allPassations.filter(p=>{const d=new Date(p.Date);return d>=monday&&d<=sunday;});
     if(!weekPassations.length){content.innerHTML='<div class="empty">Aucune passation cette semaine.</div>';return;}
@@ -1125,7 +1139,7 @@ async function loadRapport() {
         }).join('')}</tbody>
       </table></div>
       ${idvNonCount>0?`<div class="section" style="margin-top:0"><div class="section-header"><div class="section-icon">⚠️</div><div><div class="section-title">Alertes semaine</div></div></div><div style="font-size:13px;color:var(--ink-dim)">ID verification non à jour : <strong style="color:var(--danger)">${idvNonCount} fois</strong></div></div>`:''}`;
-  } catch(e){content.innerHTML='<div class="empty">Impossible de charger le rapport.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadRapport()">Réessayer</button></div>';}
+  } catch(e){ if (reqId === _rapportReq) content.innerHTML='<div class="empty">Impossible de charger le rapport.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadRapport()">Réessayer</button></div>'; }
 }
 
 async function exportRapport() {
