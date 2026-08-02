@@ -534,23 +534,47 @@
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxCn-7NfHcdhMxFIqjwjozR7j9t42tZq7jvaPhh8tmHeOqxqw7VvsJgXB9bwxbq271Glg/exec";
 
-// Apps Script exécute correctement le script (confirmé côté "Exécutions")
-// mais échoue parfois à servir la réponse finale (404 sur googleusercontent.com
-// après une redirection réussie) — un défaut connu des Web Apps Apps Script,
-// hors de notre contrôle. On absorbe ça avec plusieurs tentatives + backoff
-// progressif, et un timeout explicite car fetch() peut aussi rester bloqué
-// sans jamais répondre ni erreurer.
+// Google Sheets convertit parfois automatiquement une valeur "Créneau" qui
+// ressemble à une heure (ex: "14:30") en Date/nombre plutôt qu'en texte —
+// readSheet_ ne convertit que les instances de Date, pas les nombres bruts.
+// On sécurise l'accès ici plutôt que de faire planter tout l'affichage.
+function safeCreneau_(val) {
+  if (typeof val !== 'string') return '';
+  return (val && !val.includes('T22:00') && !val.includes('T00:00')) ? val : '';
+}
+
+// fetch() suit la redirection d'Apps Script (script.google.com →
+// script.googleusercontent.com) en passant Origin: null sur la requête
+// redirigée (comportement standard du spec Fetch pour les redirections
+// cross-origin) — et le service qui sert la réponse de contenu d'Apps
+// Script échoue par intermittence dans ce cas précis (404), dans tous les
+// navigateurs testés (Firefox, Safari). XMLHttpRequest ne pose pas ce
+// problème sur la même redirection : confirmé fiable en test manuel là où
+// fetch() échouait de façon répétée. D'où XHR ici plutôt que fetch().
+function xhrGet_(url, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url);
+    xhr.timeout = timeoutMs;
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch (e) { reject(e); }
+      } else {
+        reject(new Error('HTTP ' + xhr.status));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Erreur réseau'));
+    xhr.ontimeout = () => reject(new Error('Timeout'));
+    xhr.send();
+  });
+}
+
 async function fetchJSON_(url, retries = 4, timeoutMs = 8000) {
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timer);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      return await res.json();
+      return await xhrGet_(url, timeoutMs);
     } catch (e) {
-      clearTimeout(timer);
       if (attempt === retries) throw e;
       await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
     }
@@ -714,7 +738,7 @@ async function buildRecap() {
     const prev = _prevPassation;
     const prevDate = new Date(prev.Date);
     const prevDateStr = isNaN(prevDate) ? '' : prevDate.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-    const prevCreneau = prev['Créneau']&&!prev['Créneau'].includes('T22:00')&&!prev['Créneau'].includes('T00:00') ? prev['Créneau'] : '';
+    const prevCreneau = safeCreneau_(prev['Créneau']);
     let prevHtml = `<div class="prev-recap-title">Passation précédente · ${prevDateStr}${prevCreneau?' · '+prevCreneau:''} · par ${prev['Créé par']||'—'}</div>`;
     prevHtml += `<div class="prev-recap-content">`;
     FLEET_STATUSES.forEach(s => { prevHtml += `${s.label} : <strong>${prev[s.col]??'—'}</strong> &nbsp;`; });
@@ -895,7 +919,7 @@ function resetForm() {
 function buildWhatsAppText(p, prevP) {
   const date = new Date(p.Date);
   const dateStr = isNaN(date)?p.Date:date.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  const creneau = p['Créneau']&&!p['Créneau'].includes('T22:00')&&!p['Créneau'].includes('T00:00')?p['Créneau']:'';
+  const creneau = safeCreneau_(p['Créneau']);
   const astrData = getAstreinte(date);
   const astrText = astrData ? `${astrData.nom} (${astrData.tel})` : (p.Astreinte||'—');
   const sep=`__________________________\n`;
@@ -1043,7 +1067,7 @@ async function loadHistory() {
     list.innerHTML=passations.map(p=>{
       const date=new Date(p.Date);
       const dateStr=isNaN(date)?p.Date:date.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-      const creneau=p['Créneau']&&!p['Créneau'].includes('T22:00')&&!p['Créneau'].includes('T00:00')?p['Créneau']:'';
+      const creneau=safeCreneau_(p['Créneau']);
       const idvPill=p['ID Verification']?`<span class="pill ${p['ID Verification']==='oui'?'pill-ok':'pill-nok'}">${p['ID Verification']==='oui'?'ID verif ok':'ID verif NOK'}</span>`:'';
       const dmgPill=p.Damage?`<span class="pill ${p.Damage==='oui'?'pill-ok':'pill-nok'}">${p.Damage==='oui'?'Damage ok':'Damage NOK'}</span>`:'';
       const tripsPill=p.TripsOk?`<span class="pill ${p.TripsOk==='Oui'?'pill-ok':'pill-nok'}">${p.TripsOk==='Oui'?'Trips ok':'Trips NOK'}</span>`:'';
