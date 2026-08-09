@@ -1064,6 +1064,16 @@ async function buildWhatsAppText(p, prevP) {
 // direct), pas un instantané figé au moment de cette passation précise —
 // cohérent avec le fait que la liste IoT vit indépendamment du cycle de
 // passations et doit toujours montrer la situation la plus à jour.
+// Emoji de gravité selon la durée sans signal, pour repérer d'un coup
+// d'œil les cas urgents dans une liste WhatsApp (pas de couleurs de texte
+// possibles, donc on encode la gravité dans l'emoji en tête de ligne).
+function iotSeverityEmoji_(hours) {
+  const h = parseFloat(hours) || 0;
+  if (h >= 72) return '🔴';
+  if (h >= 24) return '🟠';
+  return '🟡';
+}
+
 async function buildIoTWhatsAppSection_() {
   try {
     const data = await fetchJSON_(SCRIPT_URL + '?action=getIoT');
@@ -1074,18 +1084,24 @@ async function buildIoTWhatsAppSection_() {
     const sep = `__________________________\n`;
     let t = sep + `SORTIE IOT (${open.length})\n`;
     const addrOf = e => e['Address'] || (e['Latitude']&&e['Longitude'] ? e['Latitude']+', '+e['Longitude'] : '—');
+    const battOf = e => e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined ? e['Vehicle Battery']+'%🔋' : '—';
+    const sev = e => iotSeverityEmoji_(e['Hours Since Signal']);
+    const since = e => e['IoT Last Update'] || '—';
     if (groupA.length) {
       t += `\nPrioritaire — Available (${groupA.length})\n`;
       groupA.forEach(e => {
         const posLabel = e['Position Check']==='correspond'?'position confirmée':e['Position Check']==='ne_correspond_pas'?'position ne correspond pas':'position non vérifiée';
         const contact = e['Contact Joint']==='oui' ? ' · contact joint' + (e['Lieu Indique']?' ("'+e['Lieu Indique']+'")':'') : (e['Position Check']==='ne_correspond_pas' ? ' · contact non joint' : '');
-        t += `- ${e['Vehicle Number']} · ${e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined?e['Vehicle Battery']+'%':'—'} · sans signal depuis ${e['IoT Last Update']||'—'} · dernier ride : ${e['Last Ride']||'—'} · 📍 ${addrOf(e)} · ${posLabel}${contact}\n`;
+        // Ligne 1 = lecture rapide (gravité + depuis quand + nom + batterie)
+        // Ligne 2 = détails (position, ride, adresse), en retrait.
+        t += `${sev(e)} *${since(e)}* — *${e['Vehicle Number']}* · ${battOf(e)}\n`;
+        t += `   ${posLabel}${contact} · dernier ride ${e['Last Ride']||'—'} · 📍 ${addrOf(e)}\n`;
       });
     }
     if (groupB.length) {
       t += `\nSuivi — autres statuts (${groupB.length})\n`;
       groupB.forEach(e => {
-        t += `- ${e['Vehicle Number']} (${e['Vehicle Status']||'—'}) · ${e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined?e['Vehicle Battery']+'%':'—'} · sans signal depuis ${e['IoT Last Update']||'—'} · dernier ride : ${e['Last Ride']||'—'} · 📍 ${addrOf(e)}\n`;
+        t += `${sev(e)} *${since(e)}* — *${e['Vehicle Number']}* (${e['Vehicle Status']||'—'}) · ${battOf(e)}\n`;
       });
     }
     return t;
@@ -1386,6 +1402,29 @@ function escAttr_(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quo
 function iotSafeId_(vn) { return 'iot-' + String(vn).replace(/[^a-zA-Z0-9]/g,'_'); }
 function iotBatteryLabel_(v) { return (v!==''&&v!==undefined&&v!==null) ? v+'%' : '—'; }
 
+// Normalise une valeur de date issue du fichier Atom importé. Selon la
+// cellule source, XLSX peut renvoyer soit un objet Date (cellule typée
+// date, avec cellDates:true), soit un nombre de série Excel (fallback),
+// soit une chaîne déjà lisible (cellule typée texte dans l'export) — d'où
+// le mélange observé dans les rapports ("30/07/2026 22:49" à côté de
+// "46089.833333333336" pour la même colonne). On uniformise vers le même
+// format fr-FR utilisé partout ailleurs dans l'appli, en laissant intactes
+// les valeurs déjà en texte lisible.
+function excelSerialToDate_(serial) {
+  const epoch = Date.UTC(1899, 11, 30); // point de référence Excel (avec le bug de l'an 1900)
+  return new Date(epoch + serial * 86400000);
+}
+function formatIoTDate_(v) {
+  if (v === '' || v === undefined || v === null) return '';
+  let d = null;
+  if (v instanceof Date) d = v;
+  else if (typeof v === 'number' && isFinite(v)) d = excelSerialToDate_(v);
+  if (d && !isNaN(d)) {
+    return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+  return String(v).trim(); // déjà lisible (chaîne texte dans l'export) — on ne la retouche pas
+}
+
 function handleIoTFileSelect(event) {
   const file = event.target.files[0];
   event.target.value = ''; // permet de réimporter le même fichier plus tard si besoin
@@ -1395,8 +1434,8 @@ function handleIoTFileSelect(event) {
   reader.onload = async (e) => {
     try {
       const workbook = isCsv
-        ? XLSX.read(e.target.result, { type: 'string' })
-        : XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        ? XLSX.read(e.target.result, { type: 'string', cellDates: true })
+        : XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
       const sheetName = workbook.SheetNames[0];
       const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
       await submitIoTImport(rows);
@@ -1421,15 +1460,22 @@ async function submitIoTImport(rawRows) {
       hoursSinceSignal: parseIoTHours_(lastUpdate),
       lat: r['Latitude'],
       lng: r['Longitude'],
-      lastRide: r['Last ride']
+      lastRide: formatIoTDate_(r['Last ride'])
     };
   }).filter(r => r.vehicleNumber);
 
-  if (!mapped.length) { showToast("Aucune ligne exploitable dans ce fichier (colonne 'Vehicle number' vide ?).", 'error'); return; }
+  // Filet de sécurité : si le fichier Atom liste un même véhicule plusieurs
+  // fois, on ne garde que la dernière occurrence (la plus complète/à jour)
+  // pour ne pas créer de doublons côté feuille IoT.
+  const dedupMap = new Map();
+  mapped.forEach(r => dedupMap.set(r.vehicleNumber, r));
+  const deduped = Array.from(dedupMap.values());
+
+  if (!deduped.length) { showToast("Aucune ligne exploitable dans ce fichier (colonne 'Vehicle number' vide ?).", 'error'); return; }
 
   showToast('Import en cours...', 'success');
   try {
-    const res = await postJSON_(SCRIPT_URL, { action:'importIoT', importedBy: currentUser_(), rows: mapped });
+    const res = await postJSON_(SCRIPT_URL, { action:'importIoT', importedBy: currentUser_(), rows: deduped });
     showToast(`Import OK — ${res.added} nouveau(x), ${res.updated} mis à jour, ${res.autoResolved} résolu(s) auto`, 'success');
     loadIoT();
   } catch(e) {
