@@ -6,6 +6,7 @@
   <title>Pass'Shift · eDOG</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -270,6 +271,39 @@
     .empty { text-align: center; padding: 3rem; color: var(--ink-dim); font-size: 14px; font-weight: 400; }
     .loading { text-align: center; padding: 2rem; color: var(--ink-dim); font-size: 14px; font-weight: 400; }
     .sep { height: 1px; background: var(--line); margin: 1.25rem 0; }
+
+    /* IOT */
+    .iot-group-title { font-family: var(--display); font-size: 24px; letter-spacing: 0.02em; color: var(--ink); margin: 1.5rem 0 0.75rem; display: flex; align-items: baseline; gap: 10px; }
+    .iot-group-title .live-section-count { font-family: var(--mono); }
+    .iot-group-sub { font-family: var(--mono); font-size: 11px; color: var(--ink-dim); margin-bottom: 0.75rem; margin-top: -0.5rem; }
+    .iot-card { border: 1px solid var(--line); background: var(--surface); padding: 1.1rem 1.3rem; margin-bottom: 10px; }
+    .iot-card.priority { border-color: var(--danger); border-left: 4px solid var(--danger); }
+    .iot-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+    .iot-card-vn { font-family: var(--display); font-size: 26px; letter-spacing: 0.02em; color: var(--ink); line-height: 1; }
+    .iot-card-meta { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); margin-top: 4px; }
+    .iot-card-battery { font-family: var(--mono); font-size: 20px; font-weight: 600; text-align: right; }
+    .iot-3way { display: flex; gap: 0; border: 1px solid var(--line); margin-bottom: 10px; }
+    .iot-3way button { flex: 1; padding: 9px 6px; border: none; border-right: 1px solid var(--line); background: transparent; cursor: pointer; font-family: var(--mono); font-size: 11px; color: var(--ink-dim); transition: all 0.15s; }
+    .iot-3way button:last-child { border-right: none; }
+    .iot-3way button.sel-correspond { background: var(--ok-d); color: var(--ok); font-weight: 600; }
+    .iot-3way button.sel-ne_correspond_pas { background: var(--danger-d); color: var(--danger); font-weight: 600; }
+    .iot-3way button.sel-non_verifie { background: var(--surface-2); color: var(--ink-dim); }
+    .iot-contact-block { background: var(--surface-2); border-left: 3px solid var(--danger); padding: 10px 12px; margin-bottom: 10px; }
+    .iot-contact-toggle { display: flex; gap: 0; border: 1px solid var(--line); width: fit-content; margin-bottom: 8px; }
+    .iot-contact-toggle button { padding: 7px 16px; border: none; border-right: 1px solid var(--line); background: transparent; cursor: pointer; font-family: var(--mono); font-size: 11px; color: var(--ink-dim); }
+    .iot-contact-toggle button:last-child { border-right: none; }
+    .iot-contact-toggle button.sel-oui { background: var(--ok-d); color: var(--ok); font-weight: 600; }
+    .iot-contact-toggle button.sel-non { background: var(--danger-d); color: var(--danger); font-weight: 600; }
+    .iot-card-actions { display: flex; gap: 8px; align-items: center; }
+    .iot-resolve-btn { flex: 1; padding: 9px; border: 1px solid var(--ok); background: transparent; color: var(--ok); font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+    .iot-resolve-btn:hover { background: var(--ok-d); }
+    .iot-journal-toggle { padding: 9px 12px; border: 1px solid var(--line); background: transparent; color: var(--ink-dim); font-family: var(--mono); font-size: 11px; cursor: pointer; }
+    .iot-journal-toggle:hover { border-color: var(--accent-line); color: var(--accent); }
+    .iot-journal { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 11px; color: var(--ink-dim); line-height: 1.8; }
+    .iot-journal-line strong { color: var(--ink); font-weight: 500; }
+    .iot-simple-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--line); background: var(--surface); padding: 10px 14px; margin-bottom: 6px; }
+    .iot-simple-info { font-size: 13px; color: var(--ink-dim); }
+    .iot-simple-info strong { color: var(--ink); font-family: var(--mono); font-size: 15px; }
   </style>
 </head>
 <body>
@@ -297,6 +331,7 @@
     <button class="tab" onclick="switchTab('history', this)">Historique</button>
     <button class="tab" onclick="switchTab('live', this)">Live</button>
     <button class="tab" onclick="switchTab('rapport', this)">Rapport</button>
+    <button class="tab" onclick="switchTab('iot', this)">IoT</button>
   </div>
 
   <!-- FORM -->
@@ -305,7 +340,8 @@
       <div class="step"><div class="step-dot active" id="dot-1">1</div><div class="step-line" id="line-1"></div></div>
       <div class="step"><div class="step-dot" id="dot-2">2</div><div class="step-line" id="line-2"></div></div>
       <div class="step"><div class="step-dot" id="dot-3">3</div><div class="step-line" id="line-3"></div></div>
-      <div class="step"><div class="step-dot" id="dot-4">4</div></div>
+      <div class="step"><div class="step-dot" id="dot-4">4</div><div class="step-line" id="line-4"></div></div>
+      <div class="step"><div class="step-dot" id="dot-5">5</div></div>
     </div>
 
     <!-- STEP 1 -->
@@ -384,7 +420,29 @@
     <!-- STEP 3 -->
     <div id="step-3" class="hidden">
       <div class="hero anim">
-        <div class="hero-step">Étape 3 · Statuts</div>
+        <div class="hero-step">Étape 3 · IoT</div>
+        <div class="hero-title">Sortie<br><em>IoT</em></div>
+        <div class="hero-desc">Importe l'export Atom (Vehicles → List view, filtré "Last IoT signal ≥ 60min").</div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+          <div><div class="section-title">Import export Atom</div><div class="section-sub">.xlsx ou .csv</div></div>
+        </div>
+        <input type="file" id="iot-file-input-passation" accept=".xlsx,.csv" style="display:none" onchange="handleIoTFileSelect(event)">
+        <button class="add-btn" onclick="document.getElementById('iot-file-input-passation').click()">+ Importer le fichier</button>
+        <div id="iot-passation-summary"></div>
+      </div>
+      <div class="nav-btns">
+        <button class="btn-prev" onclick="prevStep(3)">← Retour</button>
+        <button class="btn-next" onclick="nextStep(3)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div id="step-4" class="hidden">
+      <div class="hero anim">
+        <div class="hero-step">Étape 4 · Statuts</div>
         <div class="hero-title">ID verif, Damage<br><em>& Trips</em></div>
       </div>
       <div class="section">
@@ -447,15 +505,15 @@
         </div>
       </div>
       <div class="nav-btns">
-        <button class="btn-prev" onclick="prevStep(3)">← Retour</button>
-        <button class="btn-next" onclick="nextStep(3)">Continuer →</button>
+        <button class="btn-prev" onclick="prevStep(4)">← Retour</button>
+        <button class="btn-next" onclick="nextStep(4)">Continuer →</button>
       </div>
     </div>
 
-    <!-- STEP 4 -->
-    <div id="step-4" class="hidden">
+    <!-- STEP 5 -->
+    <div id="step-5" class="hidden">
       <div class="hero anim">
-        <div class="hero-step">Étape 4 · Envoi</div>
+        <div class="hero-step">Étape 5 · Envoi</div>
         <div class="hero-title">Message<br><em>& Envoi</em></div>
       </div>
       <div id="prev-passation-wrap"></div>
@@ -476,7 +534,7 @@
         <div id="recap-content" style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.8;font-weight:300"></div>
       </div>
       <div class="nav-btns">
-        <button class="btn-prev" onclick="prevStep(4)">← Retour</button>
+        <button class="btn-prev" onclick="prevStep(5)">← Retour</button>
       </div>
       <button class="submit-btn" id="submit-btn" onclick="submitPassation()">Envoyer la passation</button>
     </div>
@@ -515,6 +573,28 @@
       </div>
     </div>
     <div id="rapport-content"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- IOT -->
+  <div id="view-iot" class="view">
+    <div class="live-header">
+      <div>
+        <div class="live-title-text">Sorties IoT</div>
+        <div class="live-updated" id="iot-updated">—</div>
+      </div>
+      <div class="live-controls">
+        <input type="file" id="iot-file-input" accept=".xlsx,.csv" style="display:none" onchange="handleIoTFileSelect(event)">
+        <button class="refresh-btn" onclick="document.getElementById('iot-file-input').click()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Importer
+        </button>
+        <button class="refresh-btn" id="iot-refresh-btn" onclick="loadIoT()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Actualiser
+        </button>
+      </div>
+    </div>
+    <div id="iot-content"><div class="loading">Chargement...</div></div>
   </div>
 
 </div>
@@ -579,6 +659,29 @@ async function fetchJSON_(url, retries = 4, timeoutMs = 8000) {
       await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
     }
   }
+}
+
+// POST via XHR (même raison qu'en GET : fetch() plus fragile sur ce backend).
+// Pas de retry ici — une écriture n'est pas sans risque à rejouer en double
+// (import, journal...) — un seul essai avec un timeout généreux, l'appelant
+// gère l'échec (message d'erreur + l'utilisateur relance manuellement).
+function postJSON_(url, payload, timeoutMs = 20000) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.timeout = timeoutMs;
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch (e) { resolve({ ok: true }); } // réponse non-JSON mais requête reçue
+      } else {
+        reject(new Error('HTTP ' + xhr.status));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Erreur réseau'));
+    xhr.ontimeout = () => reject(new Error('Timeout'));
+    xhr.send(JSON.stringify(payload));
+  });
 }
 
 const FLEET_STATUSES = [
@@ -651,25 +754,27 @@ function switchTab(tab, el) {
   if (tab==='history') loadHistory();
   if (tab==='live') loadLive();
   if (tab==='rapport') loadRapport();
+  if (tab==='iot') loadIoT();
 }
 
 // ─── STEPPER ───
 function goToStep(n) {
-  for (let i=1;i<=4;i++) {
+  for (let i=1;i<=5;i++) {
     document.getElementById('step-'+i).classList.toggle('hidden', i!==n);
     const dot = document.getElementById('dot-'+i);
     if (i < n) { dot.textContent='✓'; dot.className='step-dot done'; }
     else if (i===n) { dot.textContent=i; dot.className='step-dot active'; }
     else { dot.textContent=i; dot.className='step-dot'; }
-    if (i < 4) document.getElementById('line-'+i).className = 'step-line'+(i<n?' done':'');
+    if (i < 5) document.getElementById('line-'+i).className = 'step-line'+(i<n?' done':'');
   }
   currentStep = n;
   window.scrollTo(0,0);
+  if (n === 3) loadIoT();
 }
 
 function nextStep(from) {
   if (!validateStep(from)) return;
-  if (from === 3) buildRecap();
+  if (from === 4) buildRecap();
   goToStep(from+1);
 }
 
@@ -683,7 +788,7 @@ function validateStep(step) {
     if (!creneau) { showErr('creneau', true); ok=false; } else { showErr('creneau', false); }
     if (!creePar) { showErr('creePar', true); ok=false; } else { showErr('creePar', false); }
   }
-  if (step === 3) {
+  if (step === 4) {
     if (!document.getElementById('idv-val').value) { showErr('idv', true); ok=false; } else { showErr('idv', false); }
     if (!document.getElementById('dmg-val').value) { showErr('dmg', true); ok=false; } else { showErr('dmg', false); }
   }
@@ -912,11 +1017,12 @@ function resetForm() {
   document.getElementById('accident-list').innerHTML='';
   aCount=0;
   loadPrevPassation();
+  document.getElementById('iot-passation-summary').innerHTML='';
   goToStep(1);
 }
 
 // ─── WHATSAPP ───
-function buildWhatsAppText(p, prevP) {
+async function buildWhatsAppText(p, prevP) {
   const date = new Date(p.Date);
   const dateStr = isNaN(date)?p.Date:date.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const creneau = safeCreneau_(p['Créneau']);
@@ -949,17 +1055,52 @@ function buildWhatsAppText(p, prevP) {
     t += `Reported yesterday : ${p['Damages Reported Yesterday']}\n`;
   }
   if (p.TripsOk==='Non' && p['Trips Detail']) { t+=sep; t+=`TRIPS LONGS\n${p['Trips Detail']}\n`; }
+  t += await buildIoTWhatsAppSection_();
   if(p.Message){t+=sep;t+=`${p.Message}\n`;}
   return t;
 }
 
-function sendToWhatsApp(passationId) {
+// Section IoT ajoutée au message de passation : reflète l'état actuel (en
+// direct), pas un instantané figé au moment de cette passation précise —
+// cohérent avec le fait que la liste IoT vit indépendamment du cycle de
+// passations et doit toujours montrer la situation la plus à jour.
+async function buildIoTWhatsAppSection_() {
+  try {
+    const data = await fetchJSON_(SCRIPT_URL + '?action=getIoT');
+    const open = (data.entries || []).filter(e => e.Resolved !== 'oui');
+    if (!open.length) return '';
+    const groupA = open.filter(e => e.Group === 'A').sort((a,b) => (parseFloat(b['Hours Since Signal'])||0) - (parseFloat(a['Hours Since Signal'])||0));
+    const groupB = open.filter(e => e.Group !== 'A').sort((a,b) => (parseFloat(b['Hours Since Signal'])||0) - (parseFloat(a['Hours Since Signal'])||0));
+    const sep = `__________________________\n`;
+    let t = sep + `SORTIE IOT (${open.length})\n`;
+    if (groupA.length) {
+      t += `\nPrioritaire — Available (${groupA.length})\n`;
+      groupA.forEach(e => {
+        const posLabel = e['Position Check']==='correspond'?'position confirmée':e['Position Check']==='ne_correspond_pas'?'position ne correspond pas':'position non vérifiée';
+        const contact = e['Contact Joint']==='oui' ? ' · contact joint' + (e['Lieu Indique']?' ("'+e['Lieu Indique']+'")':'') : (e['Position Check']==='ne_correspond_pas' ? ' · contact non joint' : '');
+        t += `- ${e['Vehicle Number']} · ${e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined?e['Vehicle Battery']+'%':'—'} · sans signal depuis ${e['IoT Last Update']||'—'} · ${posLabel}${contact}\n`;
+      });
+    }
+    if (groupB.length) {
+      t += `\nSuivi — autres statuts (${groupB.length})\n`;
+      groupB.forEach(e => {
+        t += `- ${e['Vehicle Number']} (${e['Vehicle Status']||'—'}) · ${e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined?e['Vehicle Battery']+'%':'—'} · sans signal depuis ${e['IoT Last Update']||'—'}\n`;
+      });
+    }
+    return t;
+  } catch(e) {
+    return ''; // n'empêche pas l'envoi du reste du message si l'IoT est indisponible
+  }
+}
+
+async function sendToWhatsApp(passationId) {
   const list = window._passations||[];
   const idx = list.findIndex(x=>x.ID===passationId);
   const p = list[idx];
   const prevP = list[idx+1];
   if(!p) return;
-  window.open('https://wa.me/?text='+encodeURIComponent(buildWhatsAppText(p,prevP)),'_blank');
+  const text = await buildWhatsAppText(p,prevP);
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
 }
 
 // ─── LIVE ───
@@ -1206,6 +1347,258 @@ function loadPrenom() {
     const saved = localStorage.getItem('passshift_prenom');
     if (saved) document.getElementById('creePar').value = saved;
   } catch(e) {}
+}
+
+// ─── IOT ───
+let _iotEntries = [], _iotJournal = [];
+
+function currentUser_() {
+  try {
+    const saved = localStorage.getItem('passshift_prenom');
+    if (saved) return saved;
+  } catch(e) {}
+  const field = document.getElementById('creePar');
+  return (field && field.value.trim()) || 'Inconnu';
+}
+
+// Parse un texte relatif type "2 days", "1 week", "45 minutes" en heures
+// décimales, pour trier par priorité (le plus vieux signal en tête).
+function parseIoTHours_(text) {
+  if (!text) return null;
+  const m = String(text).match(/(\d+(?:[.,]\d+)?)\s*(minute|min|hour|hr|h|day|d|week|wk|w|month|mo|year|yr|y)s?\b/i);
+  if (!m) return null;
+  const n = parseFloat(m[1].replace(',', '.'));
+  const mult = {
+    minute:1/60, min:1/60,
+    hour:1, hr:1, h:1,
+    day:24, d:24,
+    week:24*7, wk:24*7, w:24*7,
+    month:24*30, mo:24*30,
+    year:24*365, yr:24*365, y:24*365
+  };
+  const unit = m[2].toLowerCase();
+  return Math.round(n * (mult[unit] ?? 1) * 10) / 10;
+}
+
+function jsStr_(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function escAttr_(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+function iotSafeId_(vn) { return 'iot-' + String(vn).replace(/[^a-zA-Z0-9]/g,'_'); }
+function iotBatteryLabel_(v) { return (v!==''&&v!==undefined&&v!==null) ? v+'%' : '—'; }
+
+function handleIoTFileSelect(event) {
+  const file = event.target.files[0];
+  event.target.value = ''; // permet de réimporter le même fichier plus tard si besoin
+  if (!file) return;
+  const isCsv = /\.csv$/i.test(file.name);
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const workbook = isCsv
+        ? XLSX.read(e.target.result, { type: 'string' })
+        : XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+      await submitIoTImport(rows);
+    } catch (err) {
+      showToast("Fichier illisible : " + err.message, 'error');
+    }
+  };
+  if (isCsv) reader.readAsText(file); else reader.readAsArrayBuffer(file);
+}
+
+async function submitIoTImport(rawRows) {
+  const mapped = rawRows.map(r => {
+    const vn = String(r['Vehicle number'] || '').trim();
+    const status = String(r['Vehicle status'] || '').trim();
+    const lastUpdate = String(r['IoT last update'] || '').trim();
+    return {
+      vehicleNumber: vn,
+      group: status === 'Available' ? 'A' : 'B',
+      status: status,
+      battery: r['Vehicle battery'],
+      iotLastUpdate: lastUpdate,
+      hoursSinceSignal: parseIoTHours_(lastUpdate),
+      lat: r['Latitude'],
+      lng: r['Longitude'],
+      lastRide: r['Last ride']
+    };
+  }).filter(r => r.vehicleNumber);
+
+  if (!mapped.length) { showToast("Aucune ligne exploitable dans ce fichier (colonne 'Vehicle number' vide ?).", 'error'); return; }
+
+  showToast('Import en cours...', 'success');
+  try {
+    const res = await postJSON_(SCRIPT_URL, { action:'importIoT', importedBy: currentUser_(), rows: mapped });
+    showToast(`Import OK — ${res.added} nouveau(x), ${res.updated} mis à jour, ${res.autoResolved} résolu(s) auto`, 'success');
+    loadIoT();
+  } catch(e) {
+    showToast("Échec de l'import : " + e.message, 'error');
+  }
+}
+
+async function loadIoT() {
+  const content = document.getElementById('iot-content');
+  const btn = document.getElementById('iot-refresh-btn');
+  btn.classList.add('spinning');
+  content.innerHTML = '<div class="loading">Chargement...</div>';
+  try {
+    const data = await fetchJSON_(SCRIPT_URL + '?action=getIoT');
+    _iotEntries = (data.entries || []).filter(e => e.Resolved !== 'oui');
+    _iotJournal = data.journal || [];
+    document.getElementById('iot-updated').textContent = 'Mis à jour ' + new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    renderIoT();
+    renderIoTPassationSummary();
+  } catch(e) {
+    content.innerHTML = '<div class="empty">Impossible de charger les sorties IoT.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadIoT()">Réessayer</button></div>';
+  }
+  btn.classList.remove('spinning');
+}
+
+// Résumé compact affiché dans l'étape 3 de la passation — le suivi/les
+// actions détaillées (position, contact, résolution) restent dans l'onglet
+// IoT dédié, ici on veut juste confirmer l'import et donner une vue rapide.
+function renderIoTPassationSummary() {
+  const el = document.getElementById('iot-passation-summary');
+  if (!el) return;
+  if (!_iotEntries.length) {
+    el.innerHTML = '<div class="live-empty" style="margin-top:12px">Aucun véhicule sans signal actuellement.</div>';
+    return;
+  }
+  const groupA = _iotEntries.filter(e => e.Group === 'A');
+  const groupB = _iotEntries.filter(e => e.Group !== 'A');
+  let html = `<div class="live-stat-row" style="margin-top:14px;grid-template-columns:repeat(2,1fr)">
+    <div class="live-stat"><div class="live-stat-num" style="color:var(--danger)">${groupA.length}</div><div class="live-stat-label">Available</div></div>
+    <div class="live-stat"><div class="live-stat-num">${groupB.length}</div><div class="live-stat-label">Suivi</div></div>
+  </div>`;
+  if (groupA.length) {
+    html += `<div class="iot-group-sub" style="margin-top:10px">Prioritaire : ${groupA.map(e=>e['Vehicle Number']).join(', ')}</div>`;
+  }
+  html += `<button class="add-btn" style="margin-top:10px" onclick="switchTab('iot', document.querySelector('.tab:nth-child(5)'))">Voir le détail dans l'onglet IoT →</button>`;
+  el.innerHTML = html;
+}
+
+function renderIoT() {
+  const content = document.getElementById('iot-content');
+  const groupA = _iotEntries.filter(e => e.Group === 'A').sort((a,b) => (parseFloat(b['Hours Since Signal'])||0) - (parseFloat(a['Hours Since Signal'])||0));
+  const groupB = _iotEntries.filter(e => e.Group !== 'A').sort((a,b) => (parseFloat(b['Hours Since Signal'])||0) - (parseFloat(a['Hours Since Signal'])||0));
+
+  if (!_iotEntries.length) {
+    content.innerHTML = '<div class="live-empty">Aucun scooter sans signal en ce moment — importe un export Atom pour commencer.</div>';
+    return;
+  }
+
+  let html = '';
+  html += `<div class="iot-group-title">Available <span class="live-section-count">${groupA.length}</span></div>`;
+  html += `<div class="iot-group-sub">Prioritaire — réservable par un client alors qu'introuvable</div>`;
+  html += groupA.length ? groupA.map(renderIoTCardA_).join('') : '<div class="live-empty">Aucun</div>';
+
+  html += `<div class="iot-group-title">Autres statuts <span class="live-section-count">${groupB.length}</span></div>`;
+  html += `<div class="iot-group-sub">Déjà pris en charge par les équipes — simple suivi</div>`;
+  html += groupB.length ? groupB.map(renderIoTCardB_).join('') : '<div class="live-empty">Aucun</div>';
+
+  content.innerHTML = html;
+}
+
+function iotJournalHTML_(vn) {
+  const lines = _iotJournal.filter(j => j['Vehicle Number'] === vn).sort((a,b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+  if (!lines.length) return '<div>Aucun historique.</div>';
+  return lines.map(j => {
+    const d = new Date(j.Timestamp);
+    const ds = isNaN(d) ? j.Timestamp : d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return `<div class="iot-journal-line">${ds} — <strong>${j.By||'—'}</strong> : ${j.Detail||''}</div>`;
+  }).join('');
+}
+
+function toggleIoTJournal(safeId) {
+  document.getElementById('journal-'+safeId).classList.toggle('hidden');
+}
+
+function renderIoTCardA_(e) {
+  const vn = e['Vehicle Number'];
+  const safeId = iotSafeId_(vn);
+  const posCheck = e['Position Check'] || 'non_verifie';
+  const contactJoint = e['Contact Joint'] || '';
+  const lieu = e['Lieu Indique'] || '';
+  const showContact = posCheck === 'ne_correspond_pas';
+
+  return `<div class="iot-card priority">
+    <div class="iot-card-top">
+      <div>
+        <div class="iot-card-vn">${vn}</div>
+        <div class="iot-card-meta">Sans signal depuis ${e['IoT Last Update']||'—'} · dernier ride : ${e['Last Ride']||'—'}</div>
+      </div>
+      <div class="iot-card-battery">${iotBatteryLabel_(e['Vehicle Battery'])}</div>
+    </div>
+    <div class="iot-3way">
+      <button class="${posCheck==='correspond'?'sel-correspond':''}" onclick="setIoTPosition('${jsStr_(vn)}','correspond')">Correspond</button>
+      <button class="${posCheck==='ne_correspond_pas'?'sel-ne_correspond_pas':''}" onclick="setIoTPosition('${jsStr_(vn)}','ne_correspond_pas')">Ne correspond pas</button>
+      <button class="${posCheck==='non_verifie'?'sel-non_verifie':''}" onclick="setIoTPosition('${jsStr_(vn)}','non_verifie')">Non vérifié</button>
+    </div>
+    ${showContact ? `
+    <div class="iot-contact-block">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Contact dernier utilisateur</div>
+      <div class="iot-contact-toggle">
+        <button class="${contactJoint==='oui'?'sel-oui':''}" onclick="setIoTContact('${jsStr_(vn)}','oui')">Joint</button>
+        <button class="${contactJoint==='non'?'sel-non':''}" onclick="setIoTContact('${jsStr_(vn)}','non')">Non joint</button>
+      </div>
+      ${contactJoint==='oui' ? `<input type="text" placeholder="Lieu indiqué par l'utilisateur" value="${escAttr_(lieu)}" onchange="setIoTLieu('${jsStr_(vn)}', this.value)" style="width:100%;padding:8px 10px;background:var(--surface);border:1px solid var(--line);color:var(--ink);font-family:var(--font);font-size:13px">` : ''}
+    </div>` : ''}
+    <div class="iot-card-actions">
+      <button class="iot-resolve-btn" onclick="setIoTResolved('${jsStr_(vn)}')">Marquer résolu</button>
+      <button class="iot-journal-toggle" onclick="toggleIoTJournal('${safeId}')">Historique</button>
+    </div>
+    <div class="iot-journal hidden" id="journal-${safeId}">${iotJournalHTML_(vn)}</div>
+  </div>`;
+}
+
+function renderIoTCardB_(e) {
+  const vn = e['Vehicle Number'];
+  const safeId = iotSafeId_(vn);
+  return `<div class="iot-simple-row" style="flex-wrap:wrap">
+    <div class="iot-simple-info"><strong>${vn}</strong> · ${e['Vehicle Status']||'—'} · ${iotBatteryLabel_(e['Vehicle Battery'])} · sans signal depuis ${e['IoT Last Update']||'—'}</div>
+    <div style="display:flex;gap:6px">
+      <button class="iot-journal-toggle" onclick="toggleIoTJournal('${safeId}')">Historique</button>
+      <button class="iot-resolve-btn" style="flex:none;padding:7px 12px" onclick="setIoTResolved('${jsStr_(vn)}')">Résolu</button>
+    </div>
+    <div class="iot-journal hidden" id="journal-${safeId}" style="width:100%">${iotJournalHTML_(vn)}</div>
+  </div>`;
+}
+
+async function setIoTPosition(vn, value) {
+  try {
+    await postJSON_(SCRIPT_URL, { action:'updateIoT', type:'position', vehicleNumber:vn, value, by:currentUser_() });
+    const e = _iotEntries.find(x => x['Vehicle Number']===vn);
+    if (e) e['Position Check'] = value;
+    renderIoT();
+  } catch(err) { showToast('Erreur : '+err.message, 'error'); }
+}
+
+async function setIoTContact(vn, contactJoint) {
+  const e = _iotEntries.find(x => x['Vehicle Number']===vn);
+  const lieu = contactJoint === 'oui' ? (e ? e['Lieu Indique']||'' : '') : '';
+  try {
+    await postJSON_(SCRIPT_URL, { action:'updateIoT', type:'contact', vehicleNumber:vn, contactJoint, lieuIndique:lieu, by:currentUser_() });
+    if (e) { e['Contact Joint'] = contactJoint; e['Lieu Indique'] = lieu; }
+    renderIoT();
+  } catch(err) { showToast('Erreur : '+err.message, 'error'); }
+}
+
+async function setIoTLieu(vn, lieu) {
+  const e = _iotEntries.find(x => x['Vehicle Number']===vn);
+  try {
+    await postJSON_(SCRIPT_URL, { action:'updateIoT', type:'contact', vehicleNumber:vn, contactJoint:'oui', lieuIndique:lieu, by:currentUser_() });
+    if (e) e['Lieu Indique'] = lieu;
+    showToast('Lieu enregistré', 'success');
+  } catch(err) { showToast('Erreur : '+err.message, 'error'); }
+}
+
+async function setIoTResolved(vn) {
+  try {
+    await postJSON_(SCRIPT_URL, { action:'updateIoT', type:'resolved', vehicleNumber:vn, resolved:true, by:currentUser_() });
+    _iotEntries = _iotEntries.filter(x => x['Vehicle Number'] !== vn);
+    renderIoT();
+    showToast(vn + ' marqué résolu', 'success');
+  } catch(err) { showToast('Erreur : '+err.message, 'error'); }
 }
 
 initAstreinte();
