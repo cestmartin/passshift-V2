@@ -1084,10 +1084,16 @@ async function buildIoTWhatsAppSection_() {
     const battOf = e => e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined ? e['Vehicle Battery']+'%' : '—';
     const since = e => e['IoT Last Update'] || '—';
     groupA.forEach(e => {
-      const posLabel = e['Position Check']==='correspond'?'position confirmée':e['Position Check']==='ne_correspond_pas'?'position ne correspond pas':'position non vérifiée';
-      const contact = e['Contact Joint']==='oui' ? ' · contact joint' + (e['Lieu Indique']?' ("'+e['Lieu Indique']+'")':'') : (e['Position Check']==='ne_correspond_pas' ? ' · contact non joint' : '');
+      // Pas de ligne de détail par défaut ("position non vérifiée", dernier
+      // ride) — c'est le cas normal et ça n'apporte rien à la lecture rapide.
+      // On ne rajoute une 2e ligne que si elle signale quelque chose
+      // d'actionnable : position qui ne correspond pas, ou contact joint/non.
+      const alerts = [];
+      if (e['Position Check']==='ne_correspond_pas') alerts.push('position ne correspond pas');
+      if (e['Contact Joint']==='oui') alerts.push('contact joint' + (e['Lieu Indique']?' ("'+e['Lieu Indique']+'")':''));
+      else if (e['Position Check']==='ne_correspond_pas') alerts.push('contact non joint');
       t += `${since(e)} — ${e['Vehicle Number']} · ${battOf(e)}\n`;
-      t += `   ${posLabel}${contact} · dernier ride ${fmtLastRide_(e['Last Ride'])}\n`;
+      if (alerts.length) t += `   ${alerts.join(' · ')}\n`;
     });
     return t;
   } catch(e) {
