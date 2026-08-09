@@ -592,6 +592,10 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
           Actualiser
         </button>
+        <button class="refresh-btn" id="iot-cleanup-btn" onclick="cleanupIoTDuplicates()" title="Fusionne les doublons créés avant le fix d'import">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
+          Nettoyer les doublons
+        </button>
       </div>
     </div>
     <div id="iot-content"><div class="loading">Chargement...</div></div>
@@ -1064,46 +1068,27 @@ async function buildWhatsAppText(p, prevP) {
 // direct), pas un instantané figé au moment de cette passation précise —
 // cohérent avec le fait que la liste IoT vit indépendamment du cycle de
 // passations et doit toujours montrer la situation la plus à jour.
-// Emoji de gravité selon la durée sans signal, pour repérer d'un coup
-// d'œil les cas urgents dans une liste WhatsApp (pas de couleurs de texte
-// possibles, donc on encode la gravité dans l'emoji en tête de ligne).
-function iotSeverityEmoji_(hours) {
-  const h = parseFloat(hours) || 0;
-  if (h >= 72) return '🔴';
-  if (h >= 24) return '🟠';
-  return '🟡';
-}
-
+// Le message WhatsApp ne montre que le groupe prioritaire (Available) —
+// le suivi complet des autres statuts se consulte dans l'onglet IoT de
+// l'appli, pas la peine de l'imprimer dans le message. Pas d'emoji non
+// plus : certains ne passent pas correctement une fois collés dans
+// WhatsApp (rendus en "�"), donc on reste en texte brut.
 async function buildIoTWhatsAppSection_() {
   try {
     const data = await fetchJSON_(SCRIPT_URL + '?action=getIoT');
     const open = (data.entries || []).filter(e => e.Resolved !== 'oui');
-    if (!open.length) return '';
     const groupA = open.filter(e => e.Group === 'A').sort((a,b) => (parseFloat(b['Hours Since Signal'])||0) - (parseFloat(a['Hours Since Signal'])||0));
-    const groupB = open.filter(e => e.Group !== 'A').sort((a,b) => (parseFloat(b['Hours Since Signal'])||0) - (parseFloat(a['Hours Since Signal'])||0));
+    if (!groupA.length) return '';
     const sep = `__________________________\n`;
-    let t = sep + `SORTIE IOT (${open.length})\n`;
-    const addrOf = e => e['Address'] || (e['Latitude']&&e['Longitude'] ? e['Latitude']+', '+e['Longitude'] : '—');
-    const battOf = e => e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined ? e['Vehicle Battery']+'%🔋' : '—';
-    const sev = e => iotSeverityEmoji_(e['Hours Since Signal']);
+    let t = sep + `SORTIE IOT — Prioritaire (${groupA.length})\n\n`;
+    const battOf = e => e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined ? e['Vehicle Battery']+'%' : '—';
     const since = e => e['IoT Last Update'] || '—';
-    if (groupA.length) {
-      t += `\nPrioritaire — Available (${groupA.length})\n`;
-      groupA.forEach(e => {
-        const posLabel = e['Position Check']==='correspond'?'position confirmée':e['Position Check']==='ne_correspond_pas'?'position ne correspond pas':'position non vérifiée';
-        const contact = e['Contact Joint']==='oui' ? ' · contact joint' + (e['Lieu Indique']?' ("'+e['Lieu Indique']+'")':'') : (e['Position Check']==='ne_correspond_pas' ? ' · contact non joint' : '');
-        // Ligne 1 = lecture rapide (gravité + depuis quand + nom + batterie)
-        // Ligne 2 = détails (position, ride, adresse), en retrait.
-        t += `${sev(e)} *${since(e)}* — *${e['Vehicle Number']}* · ${battOf(e)}\n`;
-        t += `   ${posLabel}${contact} · dernier ride ${e['Last Ride']||'—'} · 📍 ${addrOf(e)}\n`;
-      });
-    }
-    if (groupB.length) {
-      t += `\nSuivi — autres statuts (${groupB.length})\n`;
-      groupB.forEach(e => {
-        t += `${sev(e)} *${since(e)}* — *${e['Vehicle Number']}* (${e['Vehicle Status']||'—'}) · ${battOf(e)}\n`;
-      });
-    }
+    groupA.forEach(e => {
+      const posLabel = e['Position Check']==='correspond'?'position confirmée':e['Position Check']==='ne_correspond_pas'?'position ne correspond pas':'position non vérifiée';
+      const contact = e['Contact Joint']==='oui' ? ' · contact joint' + (e['Lieu Indique']?' ("'+e['Lieu Indique']+'")':'') : (e['Position Check']==='ne_correspond_pas' ? ' · contact non joint' : '');
+      t += `${since(e)} — ${e['Vehicle Number']} · ${battOf(e)}\n`;
+      t += `   ${posLabel}${contact} · dernier ride ${fmtLastRide_(e['Last Ride'])}\n`;
+    });
     return t;
   } catch(e) {
     return ''; // n'empêche pas l'envoi du reste du message si l'IoT est indisponible
@@ -1414,15 +1399,38 @@ function excelSerialToDate_(serial) {
   const epoch = Date.UTC(1899, 11, 30); // point de référence Excel (avec le bug de l'an 1900)
   return new Date(epoch + serial * 86400000);
 }
+// Toujours stocker en ISO (comme le champ Date des passations) plutôt qu'en
+// texte français : si on envoie une chaîne "JJ/MM/AAAA HH:MM" à Sheets, il
+// la réinterprète comme une date puis la renvoie en ISO UTC brut à la
+// lecture (Code.gs convertit tout objet Date en ISO) — décalage d'heure et
+// format illisible garantis. En ISO dès le départ, le round-trip Sheets ne
+// change rien : on formate proprement uniquement à l'affichage (fmtLastRide_).
 function formatIoTDate_(v) {
   if (v === '' || v === undefined || v === null) return '';
   let d = null;
   if (v instanceof Date) d = v;
   else if (typeof v === 'number' && isFinite(v)) d = excelSerialToDate_(v);
+  if (d && !isNaN(d)) return d.toISOString();
+  return String(v).trim(); // déjà lisible (chaîne texte dans l'export) — on ne la retouche pas
+}
+
+// Formatage à l'affichage d'une valeur "Last Ride" lue depuis la feuille IoT :
+// ISO (nouveaux imports), numéro de série Excel (anciennes lignes non
+// réimportées), ou texte déjà lisible (anciennes lignes en texte brut) —
+// gérés dans cet ordre, sans jamais planter sur une valeur inattendue.
+function fmtLastRide_(v) {
+  if (v === '' || v === undefined || v === null) return '—';
+  let d = null;
+  if (typeof v === 'number' && isFinite(v)) {
+    d = excelSerialToDate_(v);
+  } else {
+    const parsed = new Date(v);
+    if (!isNaN(parsed)) d = parsed;
+  }
   if (d && !isNaN(d)) {
     return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
   }
-  return String(v).trim(); // déjà lisible (chaîne texte dans l'export) — on ne la retouche pas
+  return String(v).trim();
 }
 
 function handleIoTFileSelect(event) {
@@ -1481,6 +1489,27 @@ async function submitIoTImport(rawRows) {
   } catch(e) {
     showToast("Échec de l'import : " + e.message, 'error');
   }
+}
+
+// Nettoyage ponctuel : fusionne les entrées IoT en double créées avant le
+// fix du bug d'import (même véhicule répété dans un même export → deux
+// lignes ouvertes). Sans effet si aucun doublon n'est présent, peut donc
+// être relancé sans risque.
+async function cleanupIoTDuplicates() {
+  const btn = document.getElementById('iot-cleanup-btn');
+  btn.classList.add('spinning');
+  try {
+    const res = await postJSON_(SCRIPT_URL, { action: 'cleanupIoTDuplicates' });
+    if (res.removed > 0) {
+      showToast(`${res.removed} doublon(s) supprimé(s) sur ${res.vehiclesAffected} véhicule(s)`, 'success');
+      loadIoT();
+    } else {
+      showToast('Aucun doublon trouvé', 'success');
+    }
+  } catch(e) {
+    showToast('Échec du nettoyage : ' + e.message, 'error');
+  }
+  btn.classList.remove('spinning');
 }
 
 async function loadIoT() {
@@ -1572,7 +1601,7 @@ function renderIoTCardA_(e) {
     <div class="iot-card-top">
       <div>
         <div class="iot-card-vn">${vn}</div>
-        <div class="iot-card-meta">Statut : ${e['Vehicle Status']||'—'} · sans signal depuis ${e['IoT Last Update']||'—'} · dernier ride : ${e['Last Ride']||'—'}</div>
+        <div class="iot-card-meta">Statut : ${e['Vehicle Status']||'—'} · sans signal depuis ${e['IoT Last Update']||'—'} · dernier ride : ${fmtLastRide_(e['Last Ride'])}</div>
         <div class="iot-card-meta">📍 ${e['Address']||(e['Latitude']&&e['Longitude']?e['Latitude']+', '+e['Longitude']:'—')}</div>
       </div>
       <div class="iot-card-battery">${iotBatteryLabel_(e['Vehicle Battery'])}</div>
