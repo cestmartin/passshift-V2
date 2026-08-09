@@ -24,7 +24,7 @@ const ACCIDENT_HEADERS = ['ID_Passation', 'Date', 'Nom', 'ID utilisateur', 'Lieu
 
 const IOT_HEADERS = [
   'Vehicle Number', 'Group', 'Vehicle Status', 'Vehicle Battery', 'IoT Last Update',
-  'Hours Since Signal', 'Latitude', 'Longitude', 'Last Ride',
+  'Hours Since Signal', 'Latitude', 'Longitude', 'Address', 'Last Ride',
   'Position Check', 'Contact Joint', 'Lieu Indique', 'Resolved',
   'First Seen', 'Last Seen', 'Created By'
 ];
@@ -200,7 +200,47 @@ function readIotSheetIndexed_(sheet) {
   return { col, data };
 }
 
+// Géocodage inverse via Nominatim (OpenStreetMap) — gratuit, sans clé API.
+// Leur politique d'usage impose un User-Agent identifiant l'appli et max
+// 1 requête/seconde ; l'espacement est géré par l'appelant (importIoT_),
+// pas ici, pour ne pas coupler ce helper à la boucle d'import.
+function reverseGeocode_(lat, lng) {
+  if (lat === '' || lat === undefined || lat === null || lng === '' || lng === undefined || lng === null) return '';
+  try {
+    const url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng) + '&zoom=17&addressdetails=1';
+    const res = UrlFetchApp.fetch(url, {
+      headers: { 'User-Agent': 'PassShift-eDOG/1.0 (serviceclient@edog.fr)' },
+      muteHttpExceptions: true
+    });
+    if (res.getResponseCode() !== 200) return '';
+    const data = JSON.parse(res.getContentText());
+    const a = data.address || {};
+    const num = a.house_number || '';
+    const road = a.road || a.pedestrian || a.footway || a.cycleway || '';
+    const city = a.city || a.town || a.village || a.municipality || '';
+    const parts = [(num + ' ' + road).trim(), city].filter(Boolean);
+    return parts.length ? parts.join(', ') : (data.display_name || '');
+  } catch (e) {
+    return ''; // pas d'adresse plutôt que de faire échouer tout l'import
+  }
+}
+
 function importIoT_(body) {
+  // Deux opérateurs peuvent importer à quelques minutes d'intervalle : sans
+  // verrou, deux exécutions concurrentes peuvent toutes les deux lire l'état
+  // "avant" et toutes les deux décider de créer une ligne pour le même
+  // véhicule → doublon. Le verrou rend tout le cycle lecture-fusion-écriture
+  // atomique au niveau du script.
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    return importIoTLocked_(body);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function importIoTLocked_(body) {
   const sheet = getSheet_(SHEET_IOT, IOT_HEADERS);
   const journalSheet = getSheet_(SHEET_IOT_JOURNAL, IOT_JOURNAL_HEADERS);
   const now = new Date().toISOString();
@@ -231,8 +271,15 @@ function importIoT_(body) {
   });
 
   // 2) Mise à jour des entrées existantes / création des nouvelles
+  // Géocodage à chaque passage (nouvelle entrée ou existante) : la position
+  // vient de l'export Atom du jour et peut avoir changé depuis le dernier
+  // import, donc l'adresse doit être rafraîchie plutôt que figée à la
+  // première détection. On respecte la limite Nominatim (1 req/s) avec une
+  // pause entre chaque géocodage.
   let updated = 0, added = 0;
-  incoming.forEach(r => {
+  incoming.forEach((r, idx) => {
+    if (idx > 0) Utilities.sleep(1100);
+    const address = reverseGeocode_(r.lat, r.lng);
     const vn = r.vehicleNumber;
     if (openRowByVn[vn]) {
       const rowNum = openRowByVn[vn];
@@ -243,6 +290,7 @@ function importIoT_(body) {
       sheet.getRange(rowNum, col['Hours Since Signal']).setValue(r.hoursSinceSignal);
       sheet.getRange(rowNum, col['Latitude']).setValue(r.lat);
       sheet.getRange(rowNum, col['Longitude']).setValue(r.lng);
+      sheet.getRange(rowNum, col['Address']).setValue(address);
       sheet.getRange(rowNum, col['Last Ride']).setValue(r.lastRide);
       sheet.getRange(rowNum, col['Last Seen']).setValue(now);
       updated++;
@@ -251,6 +299,7 @@ function importIoT_(body) {
         'Vehicle Number': vn, 'Group': r.group, 'Vehicle Status': r.status,
         'Vehicle Battery': r.battery, 'IoT Last Update': r.iotLastUpdate,
         'Hours Since Signal': r.hoursSinceSignal, 'Latitude': r.lat, 'Longitude': r.lng,
+        'Address': address,
         'Last Ride': r.lastRide, 'Position Check': 'non_verifie', 'Contact Joint': '',
         'Lieu Indique': '', 'Resolved': 'non', 'First Seen': now, 'Last Seen': now,
         'Created By': importedBy
@@ -265,6 +314,16 @@ function importIoT_(body) {
 }
 
 function updateIoT_(body) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    return updateIoTLocked_(body);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function updateIoTLocked_(body) {
   const sheet = getSheet_(SHEET_IOT, IOT_HEADERS);
   const journalSheet = getSheet_(SHEET_IOT_JOURNAL, IOT_JOURNAL_HEADERS);
   const now = new Date().toISOString();
