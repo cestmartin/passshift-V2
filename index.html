@@ -340,7 +340,8 @@
       <div class="step"><div class="step-dot active" id="dot-1">1</div><div class="step-line" id="line-1"></div></div>
       <div class="step"><div class="step-dot" id="dot-2">2</div><div class="step-line" id="line-2"></div></div>
       <div class="step"><div class="step-dot" id="dot-3">3</div><div class="step-line" id="line-3"></div></div>
-      <div class="step"><div class="step-dot" id="dot-4">4</div></div>
+      <div class="step"><div class="step-dot" id="dot-4">4</div><div class="step-line" id="line-4"></div></div>
+      <div class="step"><div class="step-dot" id="dot-5">5</div></div>
     </div>
 
     <!-- STEP 1 -->
@@ -419,7 +420,29 @@
     <!-- STEP 3 -->
     <div id="step-3" class="hidden">
       <div class="hero anim">
-        <div class="hero-step">Étape 3 · Statuts</div>
+        <div class="hero-step">Étape 3 · IoT</div>
+        <div class="hero-title">Sortie<br><em>IoT</em></div>
+        <div class="hero-desc">Importe l'export Atom (Vehicles → List view, filtré "Last IoT signal ≥ 60min").</div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+          <div><div class="section-title">Import export Atom</div><div class="section-sub">.xlsx ou .csv</div></div>
+        </div>
+        <input type="file" id="iot-file-input-passation" accept=".xlsx,.csv" style="display:none" onchange="handleIoTFileSelect(event)">
+        <button class="add-btn" onclick="document.getElementById('iot-file-input-passation').click()">+ Importer le fichier</button>
+        <div id="iot-passation-summary"></div>
+      </div>
+      <div class="nav-btns">
+        <button class="btn-prev" onclick="prevStep(3)">← Retour</button>
+        <button class="btn-next" onclick="nextStep(3)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div id="step-4" class="hidden">
+      <div class="hero anim">
+        <div class="hero-step">Étape 4 · Statuts</div>
         <div class="hero-title">ID verif, Damage<br><em>& Trips</em></div>
       </div>
       <div class="section">
@@ -482,15 +505,15 @@
         </div>
       </div>
       <div class="nav-btns">
-        <button class="btn-prev" onclick="prevStep(3)">← Retour</button>
-        <button class="btn-next" onclick="nextStep(3)">Continuer →</button>
+        <button class="btn-prev" onclick="prevStep(4)">← Retour</button>
+        <button class="btn-next" onclick="nextStep(4)">Continuer →</button>
       </div>
     </div>
 
-    <!-- STEP 4 -->
-    <div id="step-4" class="hidden">
+    <!-- STEP 5 -->
+    <div id="step-5" class="hidden">
       <div class="hero anim">
-        <div class="hero-step">Étape 4 · Envoi</div>
+        <div class="hero-step">Étape 5 · Envoi</div>
         <div class="hero-title">Message<br><em>& Envoi</em></div>
       </div>
       <div id="prev-passation-wrap"></div>
@@ -511,7 +534,7 @@
         <div id="recap-content" style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.8;font-weight:300"></div>
       </div>
       <div class="nav-btns">
-        <button class="btn-prev" onclick="prevStep(4)">← Retour</button>
+        <button class="btn-prev" onclick="prevStep(5)">← Retour</button>
       </div>
       <button class="submit-btn" id="submit-btn" onclick="submitPassation()">Envoyer la passation</button>
     </div>
@@ -560,7 +583,7 @@
         <div class="live-updated" id="iot-updated">—</div>
       </div>
       <div class="live-controls">
-        <input type="file" id="iot-file-input" accept=".xlsx" style="display:none" onchange="handleIoTFileSelect(event)">
+        <input type="file" id="iot-file-input" accept=".xlsx,.csv" style="display:none" onchange="handleIoTFileSelect(event)">
         <button class="refresh-btn" onclick="document.getElementById('iot-file-input').click()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Importer
@@ -736,21 +759,22 @@ function switchTab(tab, el) {
 
 // ─── STEPPER ───
 function goToStep(n) {
-  for (let i=1;i<=4;i++) {
+  for (let i=1;i<=5;i++) {
     document.getElementById('step-'+i).classList.toggle('hidden', i!==n);
     const dot = document.getElementById('dot-'+i);
     if (i < n) { dot.textContent='✓'; dot.className='step-dot done'; }
     else if (i===n) { dot.textContent=i; dot.className='step-dot active'; }
     else { dot.textContent=i; dot.className='step-dot'; }
-    if (i < 4) document.getElementById('line-'+i).className = 'step-line'+(i<n?' done':'');
+    if (i < 5) document.getElementById('line-'+i).className = 'step-line'+(i<n?' done':'');
   }
   currentStep = n;
   window.scrollTo(0,0);
+  if (n === 3) loadIoT();
 }
 
 function nextStep(from) {
   if (!validateStep(from)) return;
-  if (from === 3) buildRecap();
+  if (from === 4) buildRecap();
   goToStep(from+1);
 }
 
@@ -764,7 +788,7 @@ function validateStep(step) {
     if (!creneau) { showErr('creneau', true); ok=false; } else { showErr('creneau', false); }
     if (!creePar) { showErr('creePar', true); ok=false; } else { showErr('creePar', false); }
   }
-  if (step === 3) {
+  if (step === 4) {
     if (!document.getElementById('idv-val').value) { showErr('idv', true); ok=false; } else { showErr('idv', false); }
     if (!document.getElementById('dmg-val').value) { showErr('dmg', true); ok=false; } else { showErr('dmg', false); }
   }
@@ -993,6 +1017,7 @@ function resetForm() {
   document.getElementById('accident-list').innerHTML='';
   aCount=0;
   loadPrevPassation();
+  document.getElementById('iot-passation-summary').innerHTML='';
   goToStep(1);
 }
 
@@ -1364,11 +1389,13 @@ function handleIoTFileSelect(event) {
   const file = event.target.files[0];
   event.target.value = ''; // permet de réimporter le même fichier plus tard si besoin
   if (!file) return;
+  const isCsv = /\.csv$/i.test(file.name);
   const reader = new FileReader();
   reader.onload = async (e) => {
     try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
+      const workbook = isCsv
+        ? XLSX.read(e.target.result, { type: 'string' })
+        : XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
       const sheetName = workbook.SheetNames[0];
       const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
       await submitIoTImport(rows);
@@ -1376,7 +1403,7 @@ function handleIoTFileSelect(event) {
       showToast("Fichier illisible : " + err.message, 'error');
     }
   };
-  reader.readAsArrayBuffer(file);
+  if (isCsv) reader.readAsText(file); else reader.readAsArrayBuffer(file);
 }
 
 async function submitIoTImport(rawRows) {
@@ -1420,10 +1447,34 @@ async function loadIoT() {
     _iotJournal = data.journal || [];
     document.getElementById('iot-updated').textContent = 'Mis à jour ' + new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     renderIoT();
+    renderIoTPassationSummary();
   } catch(e) {
     content.innerHTML = '<div class="empty">Impossible de charger les sorties IoT.<br><button class="r-nav-btn" style="margin-top:10px" onclick="loadIoT()">Réessayer</button></div>';
   }
   btn.classList.remove('spinning');
+}
+
+// Résumé compact affiché dans l'étape 3 de la passation — le suivi/les
+// actions détaillées (position, contact, résolution) restent dans l'onglet
+// IoT dédié, ici on veut juste confirmer l'import et donner une vue rapide.
+function renderIoTPassationSummary() {
+  const el = document.getElementById('iot-passation-summary');
+  if (!el) return;
+  if (!_iotEntries.length) {
+    el.innerHTML = '<div class="live-empty" style="margin-top:12px">Aucun véhicule sans signal actuellement.</div>';
+    return;
+  }
+  const groupA = _iotEntries.filter(e => e.Group === 'A');
+  const groupB = _iotEntries.filter(e => e.Group !== 'A');
+  let html = `<div class="live-stat-row" style="margin-top:14px;grid-template-columns:repeat(2,1fr)">
+    <div class="live-stat"><div class="live-stat-num" style="color:var(--danger)">${groupA.length}</div><div class="live-stat-label">Available</div></div>
+    <div class="live-stat"><div class="live-stat-num">${groupB.length}</div><div class="live-stat-label">Suivi</div></div>
+  </div>`;
+  if (groupA.length) {
+    html += `<div class="iot-group-sub" style="margin-top:10px">Prioritaire : ${groupA.map(e=>e['Vehicle Number']).join(', ')}</div>`;
+  }
+  html += `<button class="add-btn" style="margin-top:10px" onclick="switchTab('iot', document.querySelector('.tab:nth-child(5)'))">Voir le détail dans l'onglet IoT →</button>`;
+  el.innerHTML = html;
 }
 
 function renderIoT() {
