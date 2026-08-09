@@ -612,7 +612,7 @@
   </div>
 </div>
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxCn-7NfHcdhMxFIqjwjozR7j9t42tZq7jvaPhh8tmHeOqxqw7VvsJgXB9bwxbq271Glg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyNMPe0C-KnetOo12qYmkwsCtGdacMnkDlgs68NxSaVBN7s5gtARM9oHB7MNwtR54bygQ/exec";
 
 // Google Sheets convertit parfois automatiquement une valeur "Créneau" qui
 // ressemble à une heure (ex: "14:30") en Date/nombre plutôt qu'en texte —
@@ -1073,18 +1073,19 @@ async function buildIoTWhatsAppSection_() {
     const groupB = open.filter(e => e.Group !== 'A').sort((a,b) => (parseFloat(b['Hours Since Signal'])||0) - (parseFloat(a['Hours Since Signal'])||0));
     const sep = `__________________________\n`;
     let t = sep + `SORTIE IOT (${open.length})\n`;
+    const addrOf = e => e['Address'] || (e['Latitude']&&e['Longitude'] ? e['Latitude']+', '+e['Longitude'] : '—');
     if (groupA.length) {
       t += `\nPrioritaire — Available (${groupA.length})\n`;
       groupA.forEach(e => {
         const posLabel = e['Position Check']==='correspond'?'position confirmée':e['Position Check']==='ne_correspond_pas'?'position ne correspond pas':'position non vérifiée';
         const contact = e['Contact Joint']==='oui' ? ' · contact joint' + (e['Lieu Indique']?' ("'+e['Lieu Indique']+'")':'') : (e['Position Check']==='ne_correspond_pas' ? ' · contact non joint' : '');
-        t += `- ${e['Vehicle Number']} · ${e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined?e['Vehicle Battery']+'%':'—'} · sans signal depuis ${e['IoT Last Update']||'—'} · ${posLabel}${contact}\n`;
+        t += `- ${e['Vehicle Number']} · ${e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined?e['Vehicle Battery']+'%':'—'} · sans signal depuis ${e['IoT Last Update']||'—'} · dernier ride : ${e['Last Ride']||'—'} · 📍 ${addrOf(e)} · ${posLabel}${contact}\n`;
       });
     }
     if (groupB.length) {
       t += `\nSuivi — autres statuts (${groupB.length})\n`;
       groupB.forEach(e => {
-        t += `- ${e['Vehicle Number']} (${e['Vehicle Status']||'—'}) · ${e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined?e['Vehicle Battery']+'%':'—'} · sans signal depuis ${e['IoT Last Update']||'—'}\n`;
+        t += `- ${e['Vehicle Number']} (${e['Vehicle Status']||'—'}) · ${e['Vehicle Battery']!==''&&e['Vehicle Battery']!==undefined?e['Vehicle Battery']+'%':'—'} · sans signal depuis ${e['IoT Last Update']||'—'} · dernier ride : ${e['Last Ride']||'—'} · 📍 ${addrOf(e)}\n`;
       });
     }
     return t;
@@ -1525,7 +1526,8 @@ function renderIoTCardA_(e) {
     <div class="iot-card-top">
       <div>
         <div class="iot-card-vn">${vn}</div>
-        <div class="iot-card-meta">Sans signal depuis ${e['IoT Last Update']||'—'} · dernier ride : ${e['Last Ride']||'—'}</div>
+        <div class="iot-card-meta">Statut : ${e['Vehicle Status']||'—'} · sans signal depuis ${e['IoT Last Update']||'—'} · dernier ride : ${e['Last Ride']||'—'}</div>
+        <div class="iot-card-meta">📍 ${e['Address']||(e['Latitude']&&e['Longitude']?e['Latitude']+', '+e['Longitude']:'—')}</div>
       </div>
       <div class="iot-card-battery">${iotBatteryLabel_(e['Vehicle Battery'])}</div>
     </div>
@@ -1554,8 +1556,9 @@ function renderIoTCardA_(e) {
 function renderIoTCardB_(e) {
   const vn = e['Vehicle Number'];
   const safeId = iotSafeId_(vn);
+  const addr = e['Address']||(e['Latitude']&&e['Longitude']?e['Latitude']+', '+e['Longitude']:'—');
   return `<div class="iot-simple-row" style="flex-wrap:wrap">
-    <div class="iot-simple-info"><strong>${vn}</strong> · ${e['Vehicle Status']||'—'} · ${iotBatteryLabel_(e['Vehicle Battery'])} · sans signal depuis ${e['IoT Last Update']||'—'}</div>
+    <div class="iot-simple-info"><strong>${vn}</strong> · ${e['Vehicle Status']||'—'} · ${iotBatteryLabel_(e['Vehicle Battery'])} · sans signal depuis ${e['IoT Last Update']||'—'} · 📍 ${addr}</div>
     <div style="display:flex;gap:6px">
       <button class="iot-journal-toggle" onclick="toggleIoTJournal('${safeId}')">Historique</button>
       <button class="iot-resolve-btn" style="flex:none;padding:7px 12px" onclick="setIoTResolved('${jsStr_(vn)}')">Résolu</button>
