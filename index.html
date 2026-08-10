@@ -1076,7 +1076,7 @@ async function buildWhatsAppText(p, prevP) {
 async function buildIoTWhatsAppSection_() {
   try {
     const data = await fetchJSON_(SCRIPT_URL + '?action=getIoT');
-    const open = (data.entries || []).filter(e => e.Resolved !== 'oui');
+    const open = currentOpenIotEntries_(data.entries);
     const groupA = open.filter(e => e.Group === 'A').sort((a,b) => (parseFloat(b['Hours Since Signal'])||0) - (parseFloat(a['Hours Since Signal'])||0));
     if (!groupA.length) return '';
     const sep = `__________________________\n`;
@@ -1202,18 +1202,99 @@ async function loadLive() {
   btn.classList.remove('spinning');
 }
 
+// Déduplique une liste d'entrées IoT par Vehicle Number, en ne gardant que
+// la plus récente pour chaque véhicule (priorité à "Last Import", repli sur
+// "Last Seen" — même logique que latestImportOnly_ ci-dessous, pour ne pas
+// qu'un doublon juste "touché" manuellement l'emporte sur celui qui vient
+// vraiment du dernier import). La feuille IoT peut contenir des doublons
+// historiques (créés avant le fix d'import — voir cleanupIoTDuplicatesLocked_
+// côté Code.gs, qui les nettoie de façon définitive) et rien ne garantit que
+// "Nettoyer les doublons" ait été lancé — donc on déduplique aussi côté
+// affichage, pour ne jamais montrer deux fois le même scooter même si la
+// feuille elle-même n'a pas encore été nettoyée.
+function dedupeIotByVehicle_(entries) {
+  const t = v => { const d = new Date(v); return isNaN(d) ? 0 : d.getTime(); };
+  const rank = e => t(e['Last Import']) || t(e['Last Seen']);
+  const byVn = new Map();
+  entries.forEach(e => {
+    const vn = e['Vehicle Number'];
+    const existing = byVn.get(vn);
+    if (!existing || rank(e) >= rank(existing)) byVn.set(vn, e);
+  });
+  return Array.from(byVn.values());
+}
+
+// Ne garde que les entrées confirmées par le tout dernier import effectué —
+// pas celles restées "ouvertes" depuis un import plus ancien sans avoir
+// été reconfirmées depuis. On se base sur "Last Import" (écrit uniquement
+// par importIoTLocked_ côté Code.gs), pas "Last Seen" : ce dernier est
+// aussi mis à jour par les actions manuelles de l'onglet IoT (position
+// vérifiée, contact joint, résolution...), donc une entrée juste "touchée"
+// à la main sans réimport se ferait passer à tort pour la plus fraîche.
+// Repli sur "Last Seen" pour les lignes créées avant l'ajout de ce champ
+// (pas de valeur "Last Import" tant qu'elles n'ont pas subi un nouvel
+// import). Objectif demandé : se référer uniquement à l'export véhicule le
+// plus récent, jamais à un historique cumulé qui peut encore lister un
+// scooter déjà revenu en ligne tant que personne n'a réimporté un fichier
+// à jour.
+function latestImportOnly_(entries) {
+  if (!entries.length) return [];
+  const t = v => { const d = new Date(v); return isNaN(d) ? 0 : d.getTime(); };
+  const importTime = e => t(e['Last Import']) || t(e['Last Seen']);
+  const maxImport = Math.max(...entries.map(importTime));
+  return entries.filter(e => importTime(e) === maxImport);
+}
+
+// Point d'entrée unique pour "quels véhicules sont offline en ce moment" —
+// utilisé par le message WhatsApp, l'Historique et l'onglet IoT, pour que
+// les trois affichent toujours exactement la même chose : les véhicules non
+// résolus, dédupliqués, confirmés par le dernier import.
+function currentOpenIotEntries_(rawEntries) {
+  const open = (rawEntries || []).filter(e => e.Resolved !== 'oui');
+  return latestImportOnly_(dedupeIotByVehicle_(open));
+}
+
+// Bloc "scooters offline" affiché en tête de l'Historique : mêmes infos que
+// dans le message WhatsApp (nom, %, depuis quand offline) + le statut Atom
+// du véhicule (Available, Discharged...). Contrairement au message WhatsApp
+// qui ne montre que le groupe prioritaire (Available), on montre ici tous
+// les statuts puisque c'est justement ce que l'utilisateur veut distinguer.
+// Recalculé en direct sur les entrées non résolues à chaque chargement de
+// l'onglet — un scooter qui retrouve du signal (ou est marqué résolu) entre
+// deux passations sort donc tout seul de la liste au prochain rechargement,
+// sans qu'on ait à comparer une passation à l'autre nous-mêmes.
+function renderHistoryIoTSection_(entries) {
+  if (!entries.length) return '';
+  const rows = entries.map(e => {
+    const vn = e['Vehicle Number'];
+    const status = e['Vehicle Status'] || '—';
+    const batt = iotBatteryLabel_(e['Vehicle Battery']);
+    const since = e['IoT Last Update'] || '—';
+    return `<div class="iot-simple-row">
+      <div class="iot-simple-info"><strong>${vn}</strong> · ${status} · ${batt} · offline depuis ${since}</div>
+    </div>`;
+  }).join('');
+  return `<div class="live-section-title">Scooters offline actuellement <span class="live-section-count">${entries.length}</span></div>
+  <div style="margin-bottom:1.25rem">${rows}</div>`;
+}
+
 // ─── HISTORY ───
 async function loadHistory() {
   const reqId = ++_historyReq;
   const list=document.getElementById('history-list');
   list.innerHTML='<div class="loading">Chargement...</div>';
   try {
-    const data=await fetchJSON_(SCRIPT_URL+'?action=getPassations');
+    const [data, iotData] = await Promise.all([
+      fetchJSON_(SCRIPT_URL+'?action=getPassations'),
+      fetchJSON_(SCRIPT_URL+'?action=getIoT').catch(() => ({ entries: [] })) // pas bloquant : l'historique reste utile sans le bloc IoT
+    ]);
     if (reqId !== _historyReq) return; // une tentative plus récente est en cours
     const passations=(data.passations||[]).sort((a,b)=>new Date(b.Date)-new Date(a.Date));
     window._passations=passations;
     if(!passations.length){list.innerHTML='<div class="empty">Aucune passation trouvée.</div>';return;}
-    list.innerHTML=passations.map(p=>{
+    const iotOpen = currentOpenIotEntries_(iotData.entries)
+      .sort((a,b) => (parseFloat(b['Hours Since Signal'])||0) - (parseFloat(a['Hours Since Signal'])||0));
+    list.innerHTML = renderHistoryIoTSection_(iotOpen) + passations.map(p=>{
       const date=new Date(p.Date);
       const dateStr=isNaN(date)?p.Date:date.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
       const creneau=safeCreneau_(p['Créneau']);
@@ -1525,7 +1606,7 @@ async function loadIoT() {
   content.innerHTML = '<div class="loading">Chargement...</div>';
   try {
     const data = await fetchJSON_(SCRIPT_URL + '?action=getIoT');
-    _iotEntries = (data.entries || []).filter(e => e.Resolved !== 'oui');
+    _iotEntries = currentOpenIotEntries_(data.entries);
     _iotJournal = data.journal || [];
     document.getElementById('iot-updated').textContent = 'Mis à jour ' + new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     renderIoT();
