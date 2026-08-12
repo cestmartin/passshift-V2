@@ -654,7 +654,12 @@ function xhrGet_(url, timeoutMs) {
   });
 }
 
-async function fetchJSON_(url, retries = 4, timeoutMs = 8000) {
+// Apps Script répond parfois en 9-12s (cold start), sans que ce soit une
+// vraie panne — avec un timeout de 8s ça déclenchait un retry systématique
+// (donc un aller-retour complet en plus) au lieu de laisser la requête
+// aboutir. Timeout plus généreux, moins de retries : le pire cas total
+// reste comparable mais chaque tentative a une vraie chance de réussir.
+async function fetchJSON_(url, retries = 2, timeoutMs = 15000) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       return await xhrGet_(url, timeoutMs);
@@ -1002,10 +1007,10 @@ async function submitPassation() {
     accidents:collectAccidents()
   };
   try {
-    await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload),mode:'no-cors'});
+    await postJSON_(SCRIPT_URL, payload);
     showToast('Passation envoyée !','success');
     resetForm();
-  } catch(e) { showToast('Erreur lors de l\'envoi.','error'); }
+  } catch(e) { showToast('Erreur lors de l\'envoi : ' + e.message, 'error'); }
   btn.disabled=false; btn.textContent='Envoyer la passation';
 }
 
@@ -1410,9 +1415,9 @@ async function exportRapport() {
     tripsOk:p.TripsOk
   }));
   try {
-    await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'exportRapport',rows}),mode:'no-cors'});
+    await postJSON_(SCRIPT_URL, {action:'exportRapport',rows});
     showToast('Rapport exporté dans Google Sheets !','success');
-  } catch(e){showToast('Erreur export.','error');}
+  } catch(e){showToast('Erreur export : ' + e.message,'error');}
   btn.disabled=false;btn.textContent='Exporter Sheets';
 }
 
