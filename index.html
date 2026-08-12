@@ -1573,13 +1573,18 @@ async function submitIoTImport(rawRows) {
 
   if (!deduped.length) { showToast("Aucune ligne exploitable dans ce fichier (colonne 'Vehicle number' vide ?).", 'error'); return; }
 
-  showToast('Import en cours...', 'success');
+  // Le géocodage respecte le rate-limit Nominatim (1 req/s) : un gros export
+  // peut prendre 1-2 minutes côté serveur. Timeout client généreux (3 min)
+  // pour ne pas déclarer un échec côté navigateur alors que l'import continue
+  // de tourner sur Apps Script (le timeout par défaut de postJSON_, 20s, est
+  // bien trop court pour cette action précise).
+  showToast(deduped.length > 15 ? 'Import en cours (peut prendre 1-2 min pour un gros fichier)...' : 'Import en cours...', 'success');
   try {
-    const res = await postJSON_(SCRIPT_URL, { action:'importIoT', importedBy: currentUser_(), rows: deduped });
+    const res = await postJSON_(SCRIPT_URL, { action:'importIoT', importedBy: currentUser_(), rows: deduped }, 180000);
     showToast(`Import OK — ${res.added} nouveau(x), ${res.updated} mis à jour, ${res.autoResolved} résolu(s) auto`, 'success');
     loadIoT();
   } catch(e) {
-    showToast("Échec de l'import : " + e.message, 'error');
+    showToast("Échec de l'import : " + e.message + " (l'import peut malgré tout avoir abouti côté serveur — vérifie avec Actualiser avant de réimporter)", 'error');
   }
 }
 
