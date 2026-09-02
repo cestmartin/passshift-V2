@@ -616,7 +616,7 @@
   </div>
 </div>
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyNMPe0C-KnetOo12qYmkwsCtGdacMnkDlgs68NxSaVBN7s5gtARM9oHB7MNwtR54bygQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgc_9cwRz0nFGzJTyQkalc2blrYhgj2oN_PqE5-kko6S-sFxZVP9C3q40oF3MV53Gv/exec";
 
 // Google Sheets convertit parfois automatiquement une valeur "Créneau" qui
 // ressemble à une heure (ex: "14:30") en Date/nombre plutôt qu'en texte —
@@ -1107,13 +1107,23 @@ async function buildIoTWhatsAppSection_() {
 }
 
 async function sendToWhatsApp(passationId) {
+  // window.open() doit être appelé de façon SYNCHRONE dans le clic pour ne
+  // pas être bloqué comme popup par le navigateur. buildWhatsAppText() est
+  // async (elle interroge l'IoT en réseau) — si on attend son résultat avant
+  // d'ouvrir la fenêtre, le navigateur ne relie plus l'ouverture au clic
+  // utilisateur et la bloque silencieusement (aucune erreur visible, la
+  // fenêtre WhatsApp n'apparaît juste jamais). On ouvre donc l'onglet tout
+  // de suite (page vide) et on le redirige une fois le texte prêt.
+  const popup = window.open('', '_blank');
   const list = window._passations||[];
   const idx = list.findIndex(x=>x.ID===passationId);
   const p = list[idx];
   const prevP = list[idx+1];
-  if(!p) return;
+  if(!p) { if (popup) popup.close(); return; }
   const text = await buildWhatsAppText(p,prevP);
-  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+  const url = 'https://wa.me/?text='+encodeURIComponent(text);
+  if (popup && !popup.closed) popup.location.href = url;
+  else window.open(url,'_blank'); // au cas où le popup initial ait quand même été bloqué
 }
 
 // ─── LIVE ───
@@ -1615,7 +1625,7 @@ async function loadIoT() {
   btn.classList.add('spinning');
   content.innerHTML = '<div class="loading">Chargement...</div>';
   try {
-    const data = await fetchJSON_(SCRIPT_URL + '?action=getIoT');
+    const data = await fetchJSON_(SCRIPT_URL + '?action=getIoT&withJournal=1');
     _iotEntries = currentOpenIotEntries_(data.entries);
     _iotJournal = data.journal || [];
     document.getElementById('iot-updated').textContent = 'Mis à jour ' + new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
