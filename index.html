@@ -596,6 +596,10 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
           Nettoyer les doublons
         </button>
+        <button class="refresh-btn" id="iot-archive-btn" onclick="archiveResolvedIoT()" title="Déplace les entrées déjà résolues vers un onglet 'IoT Archive' pour garder la feuille IoT Signal légère">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+          Archiver l'historique
+        </button>
       </div>
     </div>
     <div id="iot-content"><div class="loading">Chargement...</div></div>
@@ -1615,6 +1619,28 @@ async function cleanupIoTDuplicates() {
     }
   } catch(e) {
     showToast('Échec du nettoyage : ' + e.message, 'error');
+  }
+  btn.classList.remove('spinning');
+}
+
+// Déplace les entrées IoT déjà résolues vers l'onglet "IoT Archive" et vide
+// "IoT Signal" de ces lignes — sans ça, la feuille IoT ne fait que grossir
+// (chaque entrée résolue y reste pour toujours) et ralentit tous les
+// chargements (Historique, WhatsApp, onglet IoT) qui lisent cette feuille
+// alors qu'ils n'utilisent que les entrées encore ouvertes.
+async function archiveResolvedIoT() {
+  const btn = document.getElementById('iot-archive-btn');
+  btn.classList.add('spinning');
+  try {
+    const res = await postJSON_(SCRIPT_URL, { action: 'archiveResolvedIoT' }, 60000);
+    if (res.archived > 0) {
+      showToast(`${res.archived} entrée(s) archivée(s), ${res.remaining} restante(s) dans IoT Signal`, 'success');
+      loadIoT();
+    } else {
+      showToast('Rien à archiver', 'success');
+    }
+  } catch(e) {
+    showToast("Échec de l'archivage : " + e.message, 'error');
   }
   btn.classList.remove('spinning');
 }
