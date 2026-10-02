@@ -1,62 +1,84 @@
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 
 const SHEET_PASSATIONS = 'Passations';
-const SHEET_ACCIDENTS = 'Accidents';
-const SHEET_RAPPORT = 'Rapport';
 const SHEET_IOT = 'IoT Signal';
 const SHEET_IOT_JOURNAL = 'IoT Journal';
+const SHEET_IOT_ARCHIVE = 'IoT Archive';
 
-const FLEET_COLUMNS = [
-  'Available', 'Charging', 'Discharged', 'Need Investigation', 'Maintenance',
-  'Stolen', 'Not Ready', 'Rebalancing', 'In Use', 'Transportation', 'Storage'
-];
-
+// Les anciennes colonnes (statuts flotte, damage...) restent dans la feuille
+// pour l'historique : ensureHeaders_ ne supprime jamais de colonne, il ajoute
+// seulement celles qui manquent (ici les champs "Offline ...").
 const PASSATION_HEADERS = [
   'ID', 'Date', 'Créneau', 'Ville', 'Astreinte', 'Créé par',
-  ...FLEET_COLUMNS,
   'ID Verification', 'ID Verification Comment',
-  'Damage', 'Damage Comment', 'Damages Open',
-  'Damages Reported Today', 'Damages Reported Yesterday',
-  'TripsOk', 'Trips Detail', 'Message'
+  'TripsOk', 'Trips Detail', 'Message',
+  'Offline Available', 'Offline Total', 'Offline Liste'
 ];
 
-const ACCIDENT_HEADERS = ['ID_Passation', 'Date', 'Nom', 'ID utilisateur', 'Lieu', 'Description', 'Ramener au garage'];
-
+// 'Last Seen' vs 'Last Import' : 'Last Seen' est touché par n'importe quelle
+// interaction sur l'entrée (import, mais aussi vérification de position,
+// contact joint, résolution manuelle depuis l'onglet Offline — voir
+// updateIoTLocked_). 'Last Import' n'est écrit QUE par importIoTLocked_,
+// jamais par une action manuelle. Le front-end s'en sert pour ne retenir
+// que les véhicules confirmés par le tout dernier export importé (voir
+// currentOpenIotEntries_ côté index.html).
 const IOT_HEADERS = [
   'Vehicle Number', 'Group', 'Vehicle Status', 'Vehicle Battery', 'IoT Last Update',
   'Hours Since Signal', 'Latitude', 'Longitude', 'Address', 'Last Ride',
   'Position Check', 'Contact Joint', 'Lieu Indique', 'Resolved',
-  'First Seen', 'Last Seen', 'Created By'
+  'First Seen', 'Last Seen', 'Last Import', 'Created By',
+  // Adresse saisie à la main pendant la passation (prime sur l'adresse GPS
+  // dans le message). Jamais écrasée par un import.
+  'Adresse Reelle'
 ];
 const IOT_JOURNAL_HEADERS = ['Timestamp', 'Vehicle Number', 'Action', 'Detail', 'By'];
 
+// Le journal n'est jamais purgé dans la feuille, mais l'onglet Offline n'a
+// besoin que de l'historique récent de chaque véhicule.
+const IOT_JOURNAL_DAYS = 30;
+
 function doGet(e) {
-  const action = e.parameter.action;
   let result;
-  if (action === 'getPassations') {
-    result = { passations: readSheet_(SHEET_PASSATIONS) };
-  } else if (action === 'getAccidents') {
-    result = { accidents: readSheet_(SHEET_ACCIDENTS) };
-  } else if (action === 'getIoT') {
-    result = { entries: readSheet_(SHEET_IOT), journal: readSheet_(SHEET_IOT_JOURNAL) };
-  } else {
-    result = { error: 'Unknown action: ' + action };
+  try {
+    const action = e.parameter.action;
+    if (action === 'getAll') {
+      // Un seul aller-retour pour tout ce dont l'app a besoin au démarrage :
+      // chaque appel Apps Script coûte ~2-3s fixes, quelle que soit la taille
+      // de la réponse.
+      result = { passations: readSheet_(SHEET_PASSATIONS), entries: readSheet_(SHEET_IOT) };
+      if (e.parameter.withJournal === '1') result.journal = readRecentJournal_();
+    } else if (action === 'getPassations') {
+      result = { passations: readSheet_(SHEET_PASSATIONS) };
+    } else if (action === 'getIoT') {
+      result = { entries: readSheet_(SHEET_IOT) };
+      if (e.parameter.withJournal === '1') result.journal = readRecentJournal_();
+    } else {
+      result = { ok: false, error: 'Unknown action: ' + action };
+    }
+  } catch (err) {
+    result = { ok: false, error: String(err) };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
-  const body = JSON.parse(e.postData.contents);
-  const action = body.action;
-  let result = { ok: true };
-  if (action === 'addPassation') {
-    addPassation_(body);
-  } else if (action === 'exportRapport') {
-    exportRapport_(body.rows || []);
-  } else if (action === 'importIoT') {
-    result = Object.assign({ ok: true }, importIoT_(body));
-  } else if (action === 'updateIoT') {
-    result = updateIoT_(body);
+  let result;
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const action = body.action;
+    if (action === 'addPassation') {
+      result = addPassation_(body);
+    } else if (action === 'importIoT') {
+      result = importIoT_(body);
+    } else if (action === 'updateIoT') {
+      result = updateIoT_(body);
+    } else {
+      result = { ok: false, error: 'Unknown action: ' + action };
+    }
+  } catch (err) {
+    // Renvoyé en JSON plutôt que la page d'erreur HTML d'Apps Script : le
+    // front affiche alors la vraie cause au lieu d'un échec opaque.
+    result = { ok: false, error: String(err) };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -64,8 +86,7 @@ function doPost(e) {
 // ─── SHEET HELPERS ───
 
 // Crée l'onglet avec les en-têtes s'il n'existe pas. S'il existe déjà,
-// ajoute en fin de ligne les en-têtes qui manqueraient (ex: nouveaux champs
-// ajoutés côté front après la création initiale de l'onglet), sans jamais
+// ajoute en fin de ligne les en-têtes qui manqueraient, sans jamais
 // réordonner ou supprimer les colonnes existantes — pour ne pas décaler les
 // données déjà écrites.
 function getSheet_(name, headers) {
@@ -107,88 +128,71 @@ function readSheet_(name) {
   const headers = values[0];
   return values.slice(1)
     .filter(row => row.some(cell => cell !== '' && cell !== null))
-    .map(row => {
-      const obj = {};
-      headers.forEach((h, i) => {
-        const val = row[i];
-        obj[h] = (val instanceof Date) ? val.toISOString() : val;
-      });
-      return obj;
-    });
+    .map(row => rowToObject_(headers, row));
 }
 
-// ─── WRITE ACTIONS ───
+function rowToObject_(headers, row) {
+  const obj = {};
+  headers.forEach((h, i) => {
+    const val = row[i];
+    obj[h] = (val instanceof Date) ? val.toISOString() : val;
+  });
+  return obj;
+}
+
+function readRecentJournal_() {
+  const cutoff = Date.now() - IOT_JOURNAL_DAYS * 86400000;
+  return readSheet_(SHEET_IOT_JOURNAL).filter(j => {
+    const t = new Date(j.Timestamp).getTime();
+    return isNaN(t) || t >= cutoff;
+  });
+}
+
+function appendJournal_(rows) {
+  if (!rows.length) return;
+  const sheet = getSheet_(SHEET_IOT_JOURNAL, IOT_JOURNAL_HEADERS);
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, IOT_JOURNAL_HEADERS.length).setValues(rows);
+}
+
+// ─── PASSATION ───
 
 function addPassation_(p) {
   const sheet = getSheet_(SHEET_PASSATIONS, PASSATION_HEADERS);
   const id = Utilities.getUuid();
-
-  const values = {
+  appendRowByHeader_(sheet, {
     'ID': id,
     'Date': p.date || new Date().toISOString(),
     'Créneau': p.creneau || '',
     'Ville': p.ville || '',
     'Astreinte': p.astreinte || '',
     'Créé par': p.creePar || '',
-    'Available': p.available ?? 0,
-    'Charging': p.charging ?? 0,
-    'Discharged': p.discharged ?? 0,
-    'Need Investigation': p.needInvestigation ?? 0,
-    'Maintenance': p.maintenance ?? 0,
-    'Stolen': p.stolen ?? 0,
-    'Not Ready': p.notReady ?? 0,
-    'Rebalancing': p.rebalancing ?? 0,
-    'In Use': p.inUse ?? 0,
-    'Transportation': p.transportation ?? 0,
-    'Storage': p.storage ?? 0,
     'ID Verification': p.idVerification || '',
     'ID Verification Comment': p.idVerificationComment || '',
-    'Damage': p.damage || '',
-    'Damage Comment': p.damageComment || '',
-    'Damages Open': p.damagesOpen ?? '',
-    'Damages Reported Today': p.damagesReportedToday ?? '',
-    'Damages Reported Yesterday': p.damagesReportedYesterday ?? '',
     'TripsOk': p.tripsOk || '',
     'Trips Detail': p.tripsDetail || '',
-    'Message': p.message || ''
-  };
-  appendRowByHeader_(sheet, values);
-
-  if (p.accidents && p.accidents.length) {
-    const accSheet = getSheet_(SHEET_ACCIDENTS, ACCIDENT_HEADERS);
-    p.accidents.forEach(a => {
-      if (!a.nom) return;
-      accSheet.appendRow([id, p.date || new Date().toISOString(), a.nom, a.userid || '', a.lieu || '', a.desc || '', a.garage ? 'Oui' : 'Non']);
-    });
-  }
-}
-
-function exportRapport_(rows) {
-  if (!rows.length) return;
-  const headers = Object.keys(rows[0]);
-  const sheet = getSheet_(SHEET_RAPPORT, headers);
-  rows.forEach(r => {
-    sheet.appendRow(headers.map(h => r[h] ?? ''));
+    'Message': p.message || '',
+    'Offline Available': p.offlineAvailable ?? '',
+    'Offline Total': p.offlineTotal ?? '',
+    'Offline Liste': p.offlineListe || ''
   });
+  return { ok: true, id: id };
 }
 
-// ─── IoT SIGNAL TRACKING ───
+// ─── IoT / SCOOTERS OFFLINE ───
 //
-// Chaque opérateur importe son propre export Atom (Vehicles > List view,
-// filtré "Last IoT signal ≥ 60min") au moment de sa passation. L'export est
-// un instantané complet de "tout ce qui n'a pas de signal en ce moment" —
-// donc à chaque import :
-//   1. un véhicule ouvert (non résolu) qui n'apparaît PLUS dans l'export
-//      a retrouvé du signal → résolu automatiquement
+// Chaque opérateur importe son export Atom (Vehicles > List view, filtré
+// "Last IoT signal ≥ 60min") au moment de sa passation. L'export est un
+// instantané complet de "tout ce qui n'a pas de signal en ce moment" — donc
+// à chaque import :
+//   1. un véhicule ouvert qui n'apparaît PLUS dans l'export a retrouvé du
+//      signal → résolu automatiquement
 //   2. un véhicule déjà ouvert qui réapparaît → ses champs Atom sont
-//      rafraîchis (statut, batterie...) mais son suivi opérateur (position
-//      vérifiée, contact, résolu) est préservé, pas écrasé
-//   3. un véhicule totalement nouveau (ou déjà résolu précédemment) →
-//      nouvelle entrée ouverte
-// Ça permet à plusieurs opérateurs d'importer le même export à quelques
-// heures d'intervalle sans dupliquer une entrée : la clé de dédoublonnage
-// est Vehicle Number, et seules les entrées non résolues sont candidates au
-// rapprochement.
+//      rafraîchis, son suivi opérateur (position, contact) est préservé
+//   3. un véhicule nouveau → nouvelle entrée ouverte
+// Puis la feuille est compactée : les lignes résolues partent dans
+// "IoT Archive" et les doublons éventuels sont fusionnés. "IoT Signal" ne
+// contient donc jamais que les scooters offline en ce moment, ce qui garde
+// toutes les lectures rapides sans maintenance manuelle.
 
 function readIotSheetIndexed_(sheet) {
   const lastCol = sheet.getLastColumn();
@@ -200,117 +204,110 @@ function readIotSheetIndexed_(sheet) {
   return { col, data };
 }
 
-// Géocodage inverse via Nominatim (OpenStreetMap) — gratuit, sans clé API.
-// Leur politique d'usage impose un User-Agent identifiant l'appli et max
-// 1 requête/seconde ; l'espacement est géré par l'appelant (importIoT_),
-// pas ici, pour ne pas coupler ce helper à la boucle d'import.
-function reverseGeocode_(lat, lng) {
-  if (lat === '' || lat === undefined || lat === null || lng === '' || lng === undefined || lng === null) return '';
-  try {
-    const url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng) + '&zoom=17&addressdetails=1';
-    const res = UrlFetchApp.fetch(url, {
-      headers: { 'User-Agent': 'PassShift-eDOG/1.0 (serviceclient@edog.fr)' },
-      muteHttpExceptions: true
-    });
-    if (res.getResponseCode() !== 200) return '';
-    const data = JSON.parse(res.getContentText());
-    const a = data.address || {};
-    const num = a.house_number || '';
-    const road = a.road || a.pedestrian || a.footway || a.cycleway || '';
-    const city = a.city || a.town || a.village || a.municipality || '';
-    const parts = [(num + ' ' + road).trim(), city].filter(Boolean);
-    return parts.length ? parts.join(', ') : (data.display_name || '');
-  } catch (e) {
-    return ''; // pas d'adresse plutôt que de faire échouer tout l'import
-  }
-}
-
+// Pas de géocodage automatique : la position GPS part telle quelle (lien
+// carte) et l'adresse n'est saisie à la main que si elle diffère du GPS
+// ('Adresse Reelle', voir updateIoTLocked_).
 function importIoT_(body) {
-  // Deux opérateurs peuvent importer à quelques minutes d'intervalle : sans
-  // verrou, deux exécutions concurrentes peuvent toutes les deux lire l'état
-  // "avant" et toutes les deux décider de créer une ligne pour le même
-  // véhicule → doublon. Le verrou rend tout le cycle lecture-fusion-écriture
-  // atomique au niveau du script.
+  const incoming = (body.rows || []).filter(r => r.vehicleNumber);
+
+  // Deux opérateurs peuvent importer à quelques minutes d'intervalle : le
+  // verrou rend le cycle lecture-fusion-écriture atomique.
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    return importIoTLocked_(body);
+    return importIoTLocked_(body, incoming);
   } finally {
     lock.releaseLock();
   }
 }
 
-function importIoTLocked_(body) {
+// Toute la fusion se fait en mémoire puis s'écrit en une fois (setValues) :
+// avant, chaque véhicule mis à jour coûtait une dizaine d'appels setValue,
+// soit des centaines d'écritures par import.
+function importIoTLocked_(body, incoming) {
   const sheet = getSheet_(SHEET_IOT, IOT_HEADERS);
-  const journalSheet = getSheet_(SHEET_IOT_JOURNAL, IOT_JOURNAL_HEADERS);
   const now = new Date().toISOString();
   const importedBy = body.importedBy || '';
-  const incoming = (body.rows || []).filter(r => r.vehicleNumber);
-  const incomingKeys = new Set(incoming.map(r => r.vehicleNumber));
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const c = {};
+  headers.forEach((h, i) => { c[h] = i; });
+  const lastRow = sheet.getLastRow();
+  const rows = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, lastCol).getValues() : [];
+  const journal = [];
 
-  const { col, data } = readIotSheetIndexed_(sheet);
-
-  // Index des entrées actuellement ouvertes (non résolues) par Vehicle Number
-  const openRowByVn = {};
-  data.forEach((row, i) => {
-    const vn = row[col['Vehicle Number'] - 1];
-    const resolved = row[col['Resolved'] - 1];
-    if (vn && resolved !== 'oui') openRowByVn[vn] = i + 2; // numéro de ligne réel (1-based + en-tête)
+  // Index des entrées ouvertes par véhicule. S'il reste des doublons, on
+  // garde la plus récente et on clôt les autres (elles partent à l'archive).
+  const time = v => { const d = new Date(v); return isNaN(d) ? 0 : d.getTime(); };
+  const rank = row => time(row[c['Last Import']]) || time(row[c['Last Seen']]);
+  const openIdx = {};
+  rows.forEach((row, i) => {
+    const vn = row[c['Vehicle Number']];
+    if (!vn || row[c['Resolved']] === 'oui') return;
+    const key = String(vn);
+    const prev = openIdx[key];
+    if (prev === undefined) { openIdx[key] = i; return; }
+    const keep = rank(row) >= rank(rows[prev]) ? i : prev;
+    rows[keep === i ? prev : i][c['Resolved']] = 'oui';
+    openIdx[key] = keep;
   });
 
   // 1) Signal revenu : entrées ouvertes absentes de ce nouvel export
+  const incomingKeys = new Set(incoming.map(r => String(r.vehicleNumber)));
   let autoResolved = 0;
-  Object.keys(openRowByVn).forEach(vn => {
-    if (!incomingKeys.has(vn)) {
-      const rowNum = openRowByVn[vn];
-      sheet.getRange(rowNum, col['Resolved']).setValue('oui');
-      sheet.getRange(rowNum, col['Last Seen']).setValue(now);
-      journalSheet.appendRow([now, vn, 'resolved', "Signal IoT revenu (résolu automatiquement à l'import)", 'Système']);
-      autoResolved++;
-    }
+  Object.keys(openIdx).forEach(vn => {
+    if (incomingKeys.has(vn)) return;
+    const row = rows[openIdx[vn]];
+    row[c['Resolved']] = 'oui';
+    row[c['Last Seen']] = now;
+    journal.push([now, vn, 'resolved', "Signal IoT revenu (résolu automatiquement à l'import)", 'Système']);
+    autoResolved++;
   });
 
   // 2) Mise à jour des entrées existantes / création des nouvelles
-  // Géocodage à chaque passage (nouvelle entrée ou existante) : la position
-  // vient de l'export Atom du jour et peut avoir changé depuis le dernier
-  // import, donc l'adresse doit être rafraîchie plutôt que figée à la
-  // première détection. On respecte la limite Nominatim (1 req/s) avec une
-  // pause entre chaque géocodage.
   let updated = 0, added = 0;
-  incoming.forEach((r, idx) => {
-    if (idx > 0) Utilities.sleep(1100);
-    const address = reverseGeocode_(r.lat, r.lng);
-    const vn = r.vehicleNumber;
-    if (openRowByVn[vn]) {
-      const rowNum = openRowByVn[vn];
-      sheet.getRange(rowNum, col['Group']).setValue(r.group);
-      sheet.getRange(rowNum, col['Vehicle Status']).setValue(r.status);
-      sheet.getRange(rowNum, col['Vehicle Battery']).setValue(r.battery);
-      sheet.getRange(rowNum, col['IoT Last Update']).setValue(r.iotLastUpdate);
-      sheet.getRange(rowNum, col['Hours Since Signal']).setValue(r.hoursSinceSignal);
-      sheet.getRange(rowNum, col['Latitude']).setValue(r.lat);
-      sheet.getRange(rowNum, col['Longitude']).setValue(r.lng);
-      sheet.getRange(rowNum, col['Address']).setValue(address);
-      sheet.getRange(rowNum, col['Last Ride']).setValue(r.lastRide);
-      sheet.getRange(rowNum, col['Last Seen']).setValue(now);
+  incoming.forEach(r => {
+    const vn = String(r.vehicleNumber);
+    const fields = {
+      'Group': r.group, 'Vehicle Status': r.status, 'Vehicle Battery': r.battery,
+      'IoT Last Update': r.iotLastUpdate, 'Hours Since Signal': r.hoursSinceSignal,
+      'Latitude': r.lat, 'Longitude': r.lng,
+      'Last Ride': r.lastRide, 'Last Seen': now, 'Last Import': now
+    };
+    const idx = openIdx[vn];
+    if (idx !== undefined) {
+      Object.keys(fields).forEach(h => { if (h in c) rows[idx][c[h]] = fields[h]; });
       updated++;
     } else {
-      const values = {
-        'Vehicle Number': vn, 'Group': r.group, 'Vehicle Status': r.status,
-        'Vehicle Battery': r.battery, 'IoT Last Update': r.iotLastUpdate,
-        'Hours Since Signal': r.hoursSinceSignal, 'Latitude': r.lat, 'Longitude': r.lng,
-        'Address': address,
-        'Last Ride': r.lastRide, 'Position Check': 'non_verifie', 'Contact Joint': '',
-        'Lieu Indique': '', 'Resolved': 'non', 'First Seen': now, 'Last Seen': now,
-        'Created By': importedBy
-      };
-      appendRowByHeader_(sheet, values);
-      journalSheet.appendRow([now, vn, 'import', 'Signalé (' + r.group + ', ' + r.status + ')', importedBy]);
+      const values = Object.assign({
+        'Vehicle Number': vn, 'Position Check': 'non_verifie', 'Contact Joint': '',
+        'Lieu Indique': '', 'Resolved': 'non', 'First Seen': now, 'Created By': importedBy
+      }, fields);
+      rows.push(headers.map(h => (h in values) ? values[h] : ''));
+      openIdx[vn] = rows.length - 1; // un vn répété plus loin dans l'import met à jour cette ligne
+      journal.push([now, vn, 'import', 'Signalé (' + r.group + ', ' + r.status + ')', importedBy]);
       added++;
     }
   });
 
-  return { added: added, updated: updated, autoResolved: autoResolved };
+  // 3) Compactage : les résolues partent à l'archive, la feuille ne garde
+  // que les scooters offline en ce moment.
+  const toArchive = rows.filter(row => row[c['Resolved']] === 'oui');
+  const toKeep = rows.filter(row => row[c['Resolved']] !== 'oui');
+  if (toArchive.length) {
+    const archive = getSheet_(SHEET_IOT_ARCHIVE, headers);
+    archive.getRange(archive.getLastRow() + 1, 1, toArchive.length, lastCol).setValues(toArchive);
+  }
+  if (lastRow > 1) sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+  if (toKeep.length) sheet.getRange(2, 1, toKeep.length, lastCol).setValues(toKeep);
+  appendJournal_(journal);
+
+  // La liste à jour est renvoyée directement : le front n'a pas à refaire
+  // un appel de lecture (~3s) juste après l'import.
+  return {
+    ok: true, added: added, updated: updated, autoResolved: autoResolved, archived: toArchive.length,
+    entries: toKeep.map(row => rowToObject_(headers, row))
+  };
 }
 
 function updateIoT_(body) {
@@ -325,39 +322,43 @@ function updateIoT_(body) {
 
 function updateIoTLocked_(body) {
   const sheet = getSheet_(SHEET_IOT, IOT_HEADERS);
-  const journalSheet = getSheet_(SHEET_IOT_JOURNAL, IOT_JOURNAL_HEADERS);
   const now = new Date().toISOString();
   const vn = body.vehicleNumber;
   const by = body.by || '';
-  const type = body.type; // 'position' | 'contact' | 'resolved'
+  const type = body.type; // 'position' | 'contact' | 'adresse' | 'resolved'
 
   const { col, data } = readIotSheetIndexed_(sheet);
   let rowNum = null;
   for (let i = 0; i < data.length; i++) {
-    if (data[i][col['Vehicle Number'] - 1] === vn && data[i][col['Resolved'] - 1] !== 'oui') {
+    if (String(data[i][col['Vehicle Number'] - 1]) === String(vn) && data[i][col['Resolved'] - 1] !== 'oui') {
       rowNum = i + 2;
       break;
     }
   }
   if (!rowNum) return { ok: false, error: 'Véhicule introuvable ou déjà résolu' };
 
+  let journalRow;
   if (type === 'position') {
     sheet.getRange(rowNum, col['Position Check']).setValue(body.value);
     const label = body.value === 'correspond' ? 'Correspond' : body.value === 'ne_correspond_pas' ? 'Ne correspond pas' : 'Non vérifié';
-    journalSheet.appendRow([now, vn, 'position_check', label, by]);
+    journalRow = [now, vn, 'position_check', label, by];
   } else if (type === 'contact') {
     sheet.getRange(rowNum, col['Contact Joint']).setValue(body.contactJoint);
     sheet.getRange(rowNum, col['Lieu Indique']).setValue(body.lieuIndique || '');
     const detail = body.contactJoint === 'oui'
       ? 'Contact joint — lieu indiqué : ' + (body.lieuIndique || '—')
       : 'Contact non joint';
-    journalSheet.appendRow([now, vn, 'contact', detail, by]);
+    journalRow = [now, vn, 'contact', detail, by];
+  } else if (type === 'adresse') {
+    sheet.getRange(rowNum, col['Adresse Reelle']).setValue(body.adresse || '');
+    journalRow = [now, vn, 'adresse', 'Adresse réelle : ' + (body.adresse || '(effacée)'), by];
   } else if (type === 'resolved') {
     sheet.getRange(rowNum, col['Resolved']).setValue(body.resolved ? 'oui' : 'non');
-    journalSheet.appendRow([now, vn, body.resolved ? 'resolved' : 'reopened', body.resolved ? 'Marqué résolu manuellement' : 'Ré-ouvert', by]);
+    journalRow = [now, vn, body.resolved ? 'resolved' : 'reopened', body.resolved ? 'Marqué résolu manuellement' : 'Ré-ouvert', by];
   } else {
     return { ok: false, error: 'Type inconnu: ' + type };
   }
   sheet.getRange(rowNum, col['Last Seen']).setValue(now);
+  appendJournal_([journalRow]);
   return { ok: true };
 }
